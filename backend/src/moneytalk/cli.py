@@ -75,6 +75,31 @@ def _reprocess(_: argparse.Namespace) -> None:
     _print(total)
 
 
+@command("fx-sync", "Descarga el tipo de cambio del BCCR (último año si está vacío)")
+def _fx_sync(_: argparse.Namespace) -> None:
+    from moneytalk.jobs import job_fx_sync
+
+    with get_sessionmaker()() as db:
+        print(f"{job_fx_sync(db, get_settings())} días actualizados")
+
+
+@command("alerts", "Evalúa alertas y las envía por Telegram si está configurado")
+def _alerts(_: argparse.Namespace) -> None:
+    from moneytalk.jobs import job_alerts
+
+    with get_sessionmaker()() as db:
+        for alert in job_alerts(db, get_settings()):
+            print(f"- {alert.message}")
+
+
+@command("weekly-summary", "Genera y envía el resumen semanal por Telegram")
+def _weekly(_: argparse.Namespace) -> None:
+    from moneytalk.jobs import job_weekly_summary
+
+    with get_sessionmaker()() as db:
+        print(job_weekly_summary(db, get_settings()))
+
+
 def main(argv: list[str] | None = None) -> None:
     configure_logging(get_settings().log_level)
     parser = argparse.ArgumentParser(prog="moneytalk")

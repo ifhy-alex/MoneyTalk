@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { api, qs, type Category, type RuleSuggestion, type Transaction } from "../api";
 import { currentMonth, money, shortDate } from "../format";
@@ -8,8 +9,9 @@ const STATUS_LABEL = { uncategorized: "Sin categoría", suggested: "Sugerida", c
 const STATUS_CLASS = { uncategorized: "bad", suggested: "warn", confirmed: "ok" };
 
 export default function Transactions() {
-  const [month, setMonth] = useState(currentMonth());
-  const [status, setStatus] = useState("");
+  const [params] = useSearchParams();
+  const [month, setMonth] = useState(params.get("status") ? "" : currentMonth());
+  const [status, setStatus] = useState(params.get("status") ?? "");
   const [q, setQ] = useState("");
   const txns = useApi<Transaction[]>(`/transactions${qs({ month, status, q })}`);
   const cats = useApi<Category[]>("/categories");

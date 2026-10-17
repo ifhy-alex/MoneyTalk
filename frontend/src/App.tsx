@@ -1,5 +1,9 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 
+import Alerts from "./pages/Alerts";
+import Budget from "./pages/Budget";
+import Dashboard from "./pages/Dashboard";
+import Goals from "./pages/Goals";
 import Ingestion from "./pages/Ingestion";
 import Rules from "./pages/Rules";
 import Transactions from "./pages/Transactions";
@@ -8,7 +12,16 @@ const NAV: { group: string; items: { to: string; label: string }[] }[] = [
   {
     group: "Finanzas",
     items: [
+      { to: "/resumen", label: "Resumen" },
       { to: "/transacciones", label: "Transacciones" },
+      { to: "/presupuesto", label: "Presupuesto" },
+      { to: "/metas", label: "Metas" },
+      { to: "/alertas", label: "Alertas y ajustes" },
+    ],
+  },
+  {
+    group: "Datos",
+    items: [
       { to: "/reglas", label: "Reglas" },
       { to: "/ingesta", label: "Ingesta" },
     ],
@@ -33,8 +46,12 @@ export default function App() {
       </nav>
       <main>
         <Routes>
-          <Route path="/" element={<Navigate to="/transacciones" replace />} />
+          <Route path="/" element={<Navigate to="/resumen" replace />} />
+          <Route path="/resumen" element={<Dashboard />} />
           <Route path="/transacciones" element={<Transactions />} />
+          <Route path="/presupuesto" element={<Budget />} />
+          <Route path="/metas" element={<Goals />} />
+          <Route path="/alertas" element={<Alerts />} />
           <Route path="/reglas" element={<Rules />} />
           <Route path="/ingesta" element={<Ingestion />} />
         </Routes>
