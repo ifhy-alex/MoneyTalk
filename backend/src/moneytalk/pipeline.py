@@ -1,18 +1,28 @@
 """Une los módulos: ingesta → categorización. Lo usan la API, la CLI y el scheduler."""
 
 from datetime import date, timedelta
+from functools import lru_cache
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from moneytalk.config import Settings
+from moneytalk.ai import claude_from_settings
+from moneytalk.categorization.ai import AiCategorizer, ClaudeCategorizer
+from moneytalk.categorization.service import categorize
+from moneytalk.config import Settings, get_settings
 from moneytalk.ingestion import service
 from moneytalk.ingestion.gmail import GmailSource, MailSource
 from moneytalk.models import RawDocument, SourceType, Transaction
 
 
+@lru_cache
+def default_categorizer() -> AiCategorizer | None:
+    client = claude_from_settings(get_settings())
+    return ClaudeCategorizer(client) if client else None
+
+
 def on_new_transaction(db: Session, txn: Transaction) -> None:
-    """Gancho por cada transacción nueva. La Fase 3 conecta aquí la categorización."""
+    categorize(db, txn, default_categorizer())
 
 
 def ingest_gmail(
