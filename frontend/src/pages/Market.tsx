@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { api } from "../api";
-import { Change, Disclaimer, ErrorNotice, SectionTitle, Sparkline } from "../components/ui";
+import { Change, Disclaimer, ErrorNotice, Figure, SectionTitle, Sparkline } from "../components/ui";
 import { useApi } from "../hooks";
 import type { Instrument, MarketOverview } from "../types-market";
 import ChartDrawer from "../components/ChartDrawer";
@@ -50,7 +50,9 @@ function InstrumentCard({ i, onOpen }: { i: Instrument; onOpen: (i: Instrument) 
         </div>
         <Change value={i.change_1d} />
       </div>
-      <div className="inst-last">{fmtLast(i)}</div>
+      <div className="inst-last">
+        <Figure text={fmtLast(i)} />
+      </div>
       <Sparkline values={i.spark} height={40} />
       <div className="periods">
         {PERIODS.slice(1).map((p) => {
@@ -109,6 +111,7 @@ export default function Market() {
     }
   }
 
+  const narrow = window.matchMedia("(max-width: 640px)").matches;
   const sectors = data?.groups.find((g) => g.title.startsWith("Sectores"));
   const ranking = (sectors?.items ?? [])
     .filter((i) => i[period] !== null)
@@ -161,9 +164,9 @@ export default function Market() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={ranking.length * 28 + 20}>
-            <BarChart data={ranking} layout="vertical" margin={{ left: 10, right: 30 }}>
+            <BarChart data={ranking} layout="vertical" margin={{ left: 10, right: 52 }}>
               <XAxis type="number" hide domain={["dataMin", "dataMax"]} />
-              <YAxis type="category" dataKey="name" width={170} tick={{ fontSize: 12, fill: "var(--ink-2)" }} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="name" width={narrow ? 104 : 170} tick={{ fontSize: narrow ? 11 : 12, fill: "var(--ink-2)" }} axisLine={false} tickLine={false} />
               <Tooltip formatter={(v) => `${Number(v).toFixed(2)} %`} cursor={{ fill: "var(--surface-2)" }} />
               <Bar dataKey="value" radius={[3, 3, 3, 3]} barSize={16} label={BarValue}>
                 {ranking.map((r) => (

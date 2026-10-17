@@ -4,7 +4,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 
 import { useApi } from "../hooks";
 import type { Instrument } from "../types-market";
-import { Change } from "./ui";
+import { Change, Figure } from "./ui";
 
 interface History {
   symbol: string;
@@ -50,7 +50,9 @@ export default function ChartDrawer({ inst, onClose }: { inst: Instrument; onClo
           </button>
         </div>
         <div className="row" style={{ alignItems: "baseline", gap: 14 }}>
-          <span className="inst-last">{inst.last.toLocaleString("es-CR", { maximumFractionDigits: 2 })}</span>
+          <span className="inst-last">
+            <Figure text={inst.last.toLocaleString("es-CR", { maximumFractionDigits: 2 })} />
+          </span>
           <Change value={inst.change_1d} />
           <span className="muted small">hoy · {inst.as_of}</span>
         </div>
@@ -74,7 +76,7 @@ export default function ChartDrawer({ inst, onClose }: { inst: Instrument; onClo
                     <stop offset="100%" stopColor={color} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid vertical={false} stroke="#8a8a7a33" />
+                <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={50} tickFormatter={(d: string) => d.slice(2, 7)} />
                 <YAxis domain={["auto", "auto"]} tick={{ fontSize: 11 }} width={60} tickFormatter={(v: number) => v.toLocaleString("es-CR", { maximumFractionDigits: 0 })} />
                 <Tooltip

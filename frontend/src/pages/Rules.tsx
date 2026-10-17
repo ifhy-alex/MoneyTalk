@@ -141,7 +141,13 @@ export default function Rules() {
               Agregar
             </button>
           </div>
-          <p className="small muted">{cats.data?.map((c) => c.name).join(" · ")}</p>
+          <ul className="tag-list">
+            {cats.data?.map((c) => (
+              <li key={c.id} className="badge">
+                {c.name}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 

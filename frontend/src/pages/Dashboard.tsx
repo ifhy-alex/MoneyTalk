@@ -104,9 +104,13 @@ export default function Dashboard() {
             <Stat
               label="Gastos"
               value={<span className="neg">{crc(data.expenses)}</span>}
-              hint={Object.entries(data.expenses_by_currency)
-                .map(([c, v]) => money(v, c))
-                .join(" + ")}
+              hint={
+                Object.keys(data.expenses_by_currency).some((c) => c !== "CRC")
+                  ? Object.entries(data.expenses_by_currency)
+                      .map(([c, v]) => money(v, c))
+                      .join(" + ")
+                  : "Todo en colones"
+              }
             />
             <Stat label="Neto" value={crc(data.net)} hint={income ? `Tasa de ahorro ${pct(Number(data.net) / income, 0)}` : "Sin ingresos registrados"} />
             <Stat

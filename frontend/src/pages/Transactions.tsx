@@ -105,7 +105,7 @@ export default function Transactions() {
           <tbody>
             {txns.data?.map((t) => (
               <tr key={t.id}>
-                <td>{shortDate(t.txn_date)}</td>
+                <td className="nowrap">{shortDate(t.txn_date)}</td>
                 <td>
                   <div>{t.merchant_raw}</div>
                   {t.ai_reason && <div className="muted small">{t.ai_reason}</div>}
@@ -113,7 +113,7 @@ export default function Transactions() {
                     <div className="muted small">Visto en {t.sources.length} fuentes (deduplicado)</div>
                   )}
                 </td>
-                <td className="muted small">{t.account_label}</td>
+                <td className="muted small nowrap">{t.account_label}</td>
                 <td className={`num ${Number(t.amount) < 0 ? "neg" : "pos"}`}>
                   {money(t.amount, t.currency)}
                 </td>
