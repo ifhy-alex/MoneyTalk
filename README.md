@@ -55,7 +55,7 @@ cd backend && uv sync && uv run pytest
 | Integración | Variables | Cómo obtenerla |
 |---|---|---|
 | Gmail (solo lectura) | `GMAIL_LABEL` | Google Cloud → habilitar Gmail API → OAuth client *Desktop* → `data/gmail_credentials.json`. Luego `cd backend && uv run moneytalk gmail-auth` (en el host, abre el navegador). Creá un filtro en Gmail que etiquete los correos de tus bancos. |
-| Tipo de cambio BCCR | `BCCR_EMAIL`, `BCCR_TOKEN` | Suscripción gratuita al servicio web de indicadores económicos del BCCR. Sin token se puede cargar el tipo de cambio a mano (`PUT /api/fx/manual`). |
+| Tipo de cambio BCCR | `BCCR_EMAIL`, `BCCR_TOKEN` | Suscripción gratuita al servicio web de indicadores económicos del BCCR. **Sin token** se usa el tipo de cambio de mercado de Yahoo (`CRC=X`), actualizado cada hora y marcado como "mercado". Un dato de mercado nunca reemplaza uno oficial del BCCR. |
 | Claude | `ANTHROPIC_API_KEY`, `CLAUDE_MODEL` | Solo se usa para categorías dudosas y resúmenes de reportes. Solo se envían el comercio, el monto y la moneda (nunca tarjetas ni cuentas). Usa `fallbacks="default"`: si el modelo declina, el servidor reintenta con otro. |
 | Telegram | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | @BotFather → token; escribile al bot y consultá `getUpdates` para obtener el chat_id. |
 | Mercado | `MARKET_PROVIDER` (`yfinance`, `fmp`, `alphavantage`) + keys | yfinance no requiere key. Las respuestas se cachean `MARKET_CACHE_TTL_HOURS`. |
@@ -74,6 +74,43 @@ Desde `backend/` (o dentro del contenedor con `docker compose exec api moneytalk
 | `uv run moneytalk fx-sync` | Descarga el tipo de cambio del BCCR |
 | `uv run moneytalk alerts` | Evalúa alertas y notifica |
 | `uv run moneytalk weekly-summary` | Envía el resumen semanal |
+
+## Actualización automática de movimientos
+
+En Costa Rica no hay una API bancaria abierta para personas, y entrar a tu banca en
+línea con tu usuario y contraseña (scraping) es inseguro y viola los términos del banco.
+Por eso MoneyTalk usa tres vías seguras:
+
+1. **Notificaciones por correo (automático):** activá en tu banco los avisos por correo de
+   cada compra o transferencia, y en Gmail creá un filtro que les ponga la etiqueta
+   `GMAIL_LABEL`. El worker las lee cada 30 minutos con permiso de **solo lectura**. Si el
+   correo trae el estado de cuenta adjunto en PDF, también se importa.
+2. **Carpeta de entrada (semiautomático):** guardá los PDF que descargués en `data/inbox/`.
+   El worker los importa cada 2 minutos y los mueve a `procesados/` o `errores/`. Las
+   contraseñas de PDFs protegidos van en `STATEMENT_PDF_PASSWORDS` (solo en `.env`).
+3. **Subida manual** desde la página Ingesta.
+
+Los duplicados entre correo y PDF se fusionan solos.
+
+### Bancos soportados
+
+| Banco | Fuente | Parser |
+|---|---|---|
+| BAC Credomatic | Correo de notificación, estado de tarjeta (PDF) | `bac.py` (formato supuesto: falta validar con ejemplos reales) |
+| Banco Nacional | Correo de notificación | `bn.py` (formato supuesto: falta validar con ejemplos reales) |
+| Banco Popular | "Reporte de Movimientos" de cuenta (PDF) | `popular.py` (validado con un reporte real; verifica el saldo fila por fila) |
+
+**Privacidad:** antes de guardarse, todo documento se enmascara: IBAN, números de cuenta y
+tarjeta (quedan los últimos 4 dígitos), teléfonos de SINPE, nombre del titular y correos.
+
+## Mercado
+
+La página **Mercado** muestra índices de EE. UU., VIX, el bono a 10 años, el índice del
+dólar, USD/CRC, oro, petróleo, bitcoin, los 11 sectores del S&P 500 y tus posiciones. Para
+cada uno calcula el rendimiento de 1 día a 12 meses, el precio frente a sus medias móviles
+de 50 y 200 sesiones, la distancia al máximo de 52 semanas y la volatilidad. Los datos son
+reales (Yahoo Finance, ~15 min de retraso para EE. UU.) y se cachean 15 minutos; el botón
+"Actualizar ahora" fuerza la descarga.
 
 ## Agregar un banco nuevo
 

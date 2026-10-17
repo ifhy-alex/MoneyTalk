@@ -23,9 +23,10 @@ export default function Dashboard() {
     <>
       <div className="page-head">
         <div>
-          <h1>Resumen</h1>
+          <div className="eyebrow">Finanzas personales</div>
+          <h1>Resumen del mes</h1>
           <div className="muted">
-            Montos en colones; los gastos en dólares se convierten con el tipo de venta del BCCR de cada día.
+            Montos en colones. Los movimientos en dólares se convierten con el tipo de cambio de cada día.
           </div>
         </div>
         <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
@@ -57,9 +58,15 @@ export default function Dashboard() {
             />
             <Stat label="Neto" value={crc(data.net)} hint={Number(data.income) ? `Ahorro ${pct(Number(data.net) / Number(data.income), 0)}` : undefined} />
             <Stat
-              label="Tipo de cambio (venta)"
+              label="Dólar hoy"
               value={data.fx ? `₡${Number(data.fx.sell).toFixed(2)}` : "—"}
-              hint={data.fx ? `Compra ₡${Number(data.fx.buy).toFixed(2)} · ${data.fx.rate_date}` : "Sin datos"}
+              hint={
+                data.fx
+                  ? data.fx.source === "BCCR"
+                    ? `BCCR · compra ₡${Number(data.fx.buy).toFixed(2)} · ${data.fx.rate_date}`
+                    : `Mercado (Yahoo) · ${data.fx.rate_date} · configurá BCCR para el oficial`
+                  : "Sin datos"
+              }
             />
           </div>
 

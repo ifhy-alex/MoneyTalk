@@ -1,5 +1,8 @@
+import type { ReactNode } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 
+import { Icons } from "./components/icons";
+import Ticker from "./components/Ticker";
 import Alerts from "./pages/Alerts";
 import Backtest from "./pages/Backtest";
 import Budget from "./pages/Budget";
@@ -7,38 +10,47 @@ import Comparator from "./pages/Comparator";
 import Dashboard from "./pages/Dashboard";
 import Goals from "./pages/Goals";
 import Ingestion from "./pages/Ingestion";
+import Market from "./pages/Market";
 import Portfolio from "./pages/Portfolio";
 import Reports from "./pages/Reports";
 import Rules from "./pages/Rules";
 import Screener from "./pages/Screener";
 import Transactions from "./pages/Transactions";
 
-const NAV: { group: string; items: { to: string; label: string }[] }[] = [
+interface NavItem {
+  to: string;
+  label: string;
+  icon: ReactNode;
+  element: ReactNode;
+}
+
+const NAV: { group: string; items: NavItem[] }[] = [
   {
     group: "Finanzas",
     items: [
-      { to: "/resumen", label: "Resumen" },
-      { to: "/transacciones", label: "Transacciones" },
-      { to: "/presupuesto", label: "Presupuesto" },
-      { to: "/metas", label: "Metas" },
-      { to: "/alertas", label: "Alertas y ajustes" },
+      { to: "/resumen", label: "Resumen", icon: Icons.home, element: <Dashboard /> },
+      { to: "/transacciones", label: "Transacciones", icon: Icons.list, element: <Transactions /> },
+      { to: "/presupuesto", label: "Presupuesto", icon: Icons.wallet, element: <Budget /> },
+      { to: "/metas", label: "Metas", icon: Icons.target, element: <Goals /> },
+      { to: "/alertas", label: "Alertas y ajustes", icon: Icons.bell, element: <Alerts /> },
     ],
   },
   {
     group: "Inversiones",
     items: [
-      { to: "/portafolio", label: "Portafolio" },
-      { to: "/screener", label: "Screener" },
-      { to: "/reportes", label: "Reportes trimestrales" },
-      { to: "/comparador", label: "Comparador local" },
-      { to: "/backtesting", label: "Backtesting" },
+      { to: "/mercado", label: "Mercado", icon: Icons.pulse, element: <Market /> },
+      { to: "/portafolio", label: "Portafolio", icon: Icons.pie, element: <Portfolio /> },
+      { to: "/screener", label: "Screener", icon: Icons.filter, element: <Screener /> },
+      { to: "/reportes", label: "Reportes trimestrales", icon: Icons.doc, element: <Reports /> },
+      { to: "/comparador", label: "Comparador local", icon: Icons.scale, element: <Comparator /> },
+      { to: "/backtesting", label: "Backtesting", icon: Icons.history, element: <Backtest /> },
     ],
   },
   {
     group: "Datos",
     items: [
-      { to: "/reglas", label: "Reglas" },
-      { to: "/ingesta", label: "Ingesta" },
+      { to: "/reglas", label: "Reglas", icon: Icons.rules, element: <Rules /> },
+      { to: "/ingesta", label: "Ingesta", icon: Icons.inbox, element: <Ingestion /> },
     ],
   },
 ];
@@ -46,36 +58,38 @@ const NAV: { group: string; items: { to: string; label: string }[] }[] = [
 export default function App() {
   return (
     <div className="layout">
-      <nav className="sidebar">
-        <div className="brand">MoneyTalk</div>
+      <nav className="sidebar" aria-label="Navegación principal">
+        <div className="brand">
+          <div className="brand-mark">M</div>
+          <div>
+            <div className="brand-name">MoneyTalk</div>
+            <div className="brand-sub">Finanzas · CR</div>
+          </div>
+        </div>
         {NAV.map((g) => (
           <div key={g.group}>
             <div className="nav-group">{g.group}</div>
             {g.items.map((i) => (
               <NavLink key={i.to} to={i.to}>
+                {i.icon}
                 {i.label}
               </NavLink>
             ))}
           </div>
         ))}
+        <div className="side-foot">Local primero. Sin acceso a tu banca en línea: solo correos y PDFs.</div>
       </nav>
-      <main>
-        <Routes>
-          <Route path="/" element={<Navigate to="/resumen" replace />} />
-          <Route path="/resumen" element={<Dashboard />} />
-          <Route path="/transacciones" element={<Transactions />} />
-          <Route path="/presupuesto" element={<Budget />} />
-          <Route path="/metas" element={<Goals />} />
-          <Route path="/alertas" element={<Alerts />} />
-          <Route path="/portafolio" element={<Portfolio />} />
-          <Route path="/screener" element={<Screener />} />
-          <Route path="/reportes" element={<Reports />} />
-          <Route path="/comparador" element={<Comparator />} />
-          <Route path="/backtesting" element={<Backtest />} />
-          <Route path="/reglas" element={<Rules />} />
-          <Route path="/ingesta" element={<Ingestion />} />
-        </Routes>
-      </main>
+      <div className="content">
+        <Ticker />
+        <main>
+          <Routes>
+            <Route path="/" element={<Navigate to="/resumen" replace />} />
+            {NAV.flatMap((g) => g.items).map((i) => (
+              <Route key={i.to} path={i.to} element={i.element} />
+            ))}
+          </Routes>
+        </main>
+      </div>
     </div>
   );
 }
