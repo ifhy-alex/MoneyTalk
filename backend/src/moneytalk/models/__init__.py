@@ -13,6 +13,14 @@ from moneytalk.models.finance import (
     GoalContribution,
 )
 from moneytalk.models.ingestion import RawDocument, RawDocumentStatus, SourceType
+from moneytalk.models.investments import (
+    Asset,
+    AssetType,
+    MarketCache,
+    ScreenerPreset,
+    Trade,
+    TradeSide,
+)
 from moneytalk.models.transactions import (
     CategorySource,
     CategoryStatus,
@@ -26,6 +34,8 @@ __all__ = [
     "Alert",
     "AlertKind",
     "AppSetting",
+    "Asset",
+    "AssetType",
     "Base",
     "Budget",
     "Category",
@@ -37,10 +47,14 @@ __all__ = [
     "ExchangeRate",
     "Goal",
     "GoalContribution",
+    "MarketCache",
     "MatchType",
     "RawDocument",
     "RawDocumentStatus",
+    "ScreenerPreset",
     "SourceType",
+    "Trade",
+    "TradeSide",
     "Transaction",
     "TransactionSource",
 ]

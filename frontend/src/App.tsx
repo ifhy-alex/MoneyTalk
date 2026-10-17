@@ -5,7 +5,9 @@ import Budget from "./pages/Budget";
 import Dashboard from "./pages/Dashboard";
 import Goals from "./pages/Goals";
 import Ingestion from "./pages/Ingestion";
+import Portfolio from "./pages/Portfolio";
 import Rules from "./pages/Rules";
+import Screener from "./pages/Screener";
 import Transactions from "./pages/Transactions";
 
 const NAV: { group: string; items: { to: string; label: string }[] }[] = [
@@ -17,6 +19,13 @@ const NAV: { group: string; items: { to: string; label: string }[] }[] = [
       { to: "/presupuesto", label: "Presupuesto" },
       { to: "/metas", label: "Metas" },
       { to: "/alertas", label: "Alertas y ajustes" },
+    ],
+  },
+  {
+    group: "Inversiones",
+    items: [
+      { to: "/portafolio", label: "Portafolio" },
+      { to: "/screener", label: "Screener" },
     ],
   },
   {
@@ -52,6 +61,8 @@ export default function App() {
           <Route path="/presupuesto" element={<Budget />} />
           <Route path="/metas" element={<Goals />} />
           <Route path="/alertas" element={<Alerts />} />
+          <Route path="/portafolio" element={<Portfolio />} />
+          <Route path="/screener" element={<Screener />} />
           <Route path="/reglas" element={<Rules />} />
           <Route path="/ingesta" element={<Ingestion />} />
         </Routes>

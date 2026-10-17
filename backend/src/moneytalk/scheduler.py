@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from moneytalk.config import Settings, get_settings
 from moneytalk.db import get_sessionmaker
+from moneytalk.investments.jobs import job_refresh_quotes
 from moneytalk.jobs import job_alerts, job_fx_sync, job_ingest_and_alert, job_weekly_summary
 from moneytalk.log import configure_logging
 
@@ -56,6 +57,11 @@ def build_scheduler() -> BlockingScheduler:
         _run("resumen semanal", job_weekly_summary),
         CronTrigger(day_of_week="mon", hour=7, minute=30, timezone=tz),
         id="weekly",
+    )
+    sched.add_job(
+        _run("cotizaciones", job_refresh_quotes),
+        CronTrigger(day_of_week="mon-fri", hour=15, minute=30, timezone=tz),
+        id="quotes",
     )
     return sched
 
