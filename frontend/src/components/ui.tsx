@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 
 export const CHART = {
   accent: "#1c8d68",
@@ -9,11 +9,38 @@ export const CHART = {
   palette: ["#1c8d68", "#4f74c8", "#c48a22", "#8e5fb5", "#c4503a", "#2a9db5", "#7f8c3a", "#b5651d", "#6c757d"],
 };
 
+// Separa "-₡1 234,56" o "USD 1 234,56" en signo, símbolo, entero y decimales.
+const FIGURE = /^([-−+]?)([^\d\s+−-]*)\s?([\d\s]*\d)([.,]\d+)?$/;
+
+/** Cifra con el símbolo de moneda y los decimales subordinados al entero. Si no es un monto, la deja igual. */
+export function Figure({ text }: { text: string }) {
+  const m = FIGURE.exec(text.trim());
+  if (!m) return <>{text}</>;
+  const [, sign, sym, int, dec] = m;
+  return (
+    <span className="fig" aria-label={text}>
+      {sign && <span className="fig-sign">{sign === "-" ? "−" : sign}</span>}
+      {sym && <span className={sym.length > 1 ? "fig-code" : "fig-sym"}>{sym}</span>}
+      <span>{int}</span>
+      {dec && <span className="fig-dec">{dec}</span>}
+    </span>
+  );
+}
+
+function asFigure(value: ReactNode): ReactNode {
+  if (typeof value === "string") return <Figure text={value} />;
+  if (isValidElement(value)) {
+    const el = value as ReactElement<{ children?: ReactNode }>;
+    if (typeof el.props.children === "string") return cloneElement(el, {}, <Figure text={el.props.children} />);
+  }
+  return value;
+}
+
 export function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
   return (
     <div className="card stat">
       <div className="label">{label}</div>
-      <div className="value">{value}</div>
+      <div className="value">{asFigure(value)}</div>
       {hint && <div className="muted small hint">{hint}</div>}
     </div>
   );

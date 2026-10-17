@@ -60,10 +60,12 @@ export default function App() {
     <div className="layout">
       <nav className="sidebar" aria-label="Navegación principal">
         <div className="brand">
-          <div className="brand-mark">M</div>
+          <div className="brand-mark" aria-hidden>
+            ₡
+          </div>
           <div>
             <div className="brand-name">MoneyTalk</div>
-            <div className="brand-sub">Finanzas · CR</div>
+            <div className="brand-sub">Finanzas en Costa Rica</div>
           </div>
         </div>
         {NAV.map((g) => (
