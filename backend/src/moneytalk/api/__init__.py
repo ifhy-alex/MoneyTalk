@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
-from moneytalk.api import health
+from moneytalk.api import accounts, health, ingestion, transactions
 
 router = APIRouter()
-router.include_router(health.router)
+for module in (health, accounts, ingestion, transactions):
+    router.include_router(module.router)

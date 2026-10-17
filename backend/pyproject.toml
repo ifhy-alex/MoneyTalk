@@ -51,6 +51,8 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "S", "DTZ
 ignore = [
     "PLR0913",  # FastAPI y servicios reciben varios parámetros
     "PLR2004",  # números mágicos: umbrales financieros explícitos
+    "PLR0917",  # endpoints con varios filtros opcionales
+    "PLC0415",  # imports diferidos a propósito (librerías pesadas u opcionales)
     "RUF001", "RUF002", "RUF003",  # textos en español con caracteres "ambiguos"
 ]
 
@@ -81,3 +83,8 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[[tool.mypy.overrides]]
+# PyMuPDF y google-auth no publican tipos completos.
+module = ["moneytalk.ingestion.pdf", "moneytalk.ingestion.gmail", "tests.helpers"]
+disallow_untyped_calls = false

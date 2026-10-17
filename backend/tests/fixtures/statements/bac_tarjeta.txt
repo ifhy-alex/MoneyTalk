@@ -1,0 +1,10 @@
+BAC CREDOMATIC
+ESTADO DE CUENTA TARJETA DE CREDITO
+Tarjeta: XXXX-XXXX-XXXX-4821
+Fecha de corte: 31/10/2026
+DETALLE DE TRANSACCIONES
+Fecha       Concepto                         Moneda  Monto
+02/10/2026  SU PAGO GRACIAS                  CRC     -100,000.00
+05/10/2026  UBER TRIP HELP.UBER.COM          USD     8.40
+17/10/2026  AUTOMERCADO ESCAZU               CRC     15,250.50
+20/10/2026  SPOTIFY P1A2B3                   USD     5.99
