@@ -5,6 +5,8 @@ import { api } from "../api";
 import { Change, Disclaimer, ErrorNotice, SectionTitle, Sparkline } from "../components/ui";
 import { useApi } from "../hooks";
 import type { Instrument, MarketOverview } from "../types-market";
+import ChartDrawer from "../components/ChartDrawer";
+import Help from "../components/Help";
 
 type Period = "change_1d" | "change_1w" | "change_1m" | "change_3m" | "change_ytd" | "change_1y";
 const PERIODS: { key: Period; label: string }[] = [
@@ -36,7 +38,7 @@ function BarValue(props: { x?: unknown; y?: unknown; width?: unknown; height?: u
   );
 }
 
-function InstrumentCard({ i }: { i: Instrument }) {
+function InstrumentCard({ i, onOpen }: { i: Instrument; onOpen: (i: Instrument) => void }) {
   return (
     <div className="card inst">
       <div className="inst-top">
@@ -64,6 +66,9 @@ function InstrumentCard({ i }: { i: Instrument }) {
         })}
       </div>
       <div className="inst-foot">
+        <button className="link small" onClick={() => onOpen(i)}>
+          Ver gráfico
+        </button>
         {i.above_sma200 !== null && (
           <span className={`badge ${i.above_sma200 ? "ok" : "bad"}`} title="Precio contra su promedio de 200 sesiones">
             {i.above_sma200 ? "▲" : "▼"} MM200
@@ -89,6 +94,7 @@ export default function Market() {
   const [period, setPeriod] = useState<Period>("change_ytd");
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string>();
+  const [open, setOpen] = useState<Instrument>();
 
   async function refresh() {
     setRefreshing(true);
@@ -115,7 +121,10 @@ export default function Market() {
       <div className="page-head">
         <div>
           <div className="eyebrow">Mercados</div>
-          <h1>Panorama y tendencias</h1>
+          <div className="title-row">
+            <h1>Panorama y tendencias</h1>
+            <Help topic="mercado" />
+          </div>
           <div className="muted">
             Rendimiento por periodo, precio frente a sus promedios móviles y distancia al máximo anual. Son hechos
             medibles, no pronósticos.
@@ -139,7 +148,10 @@ export default function Market() {
       {sectors && (
         <div className="card">
           <div className="card-head">
-            <h2>Rotación sectorial</h2>
+            <div className="title-row">
+              <h2>Rotación sectorial</h2>
+              <Help topic="mercado.sectores" />
+            </div>
             <div className="row">
               {PERIODS.map((p) => (
                 <button key={p.key} className={`chip ${period === p.key ? "on" : ""}`} onClick={() => setPeriod(p.key)}>
@@ -165,24 +177,25 @@ export default function Market() {
 
       {others.map((g) => (
         <section key={g.title}>
-          <SectionTitle>{g.title}</SectionTitle>
+          <SectionTitle aside={g.title.startsWith("ETF") ? <Help topic="mercado.etfs" label="¿Qué son?" /> : undefined}>{g.title}</SectionTitle>
           <div className="instruments">
             {g.items.map((i) => (
-              <InstrumentCard key={i.symbol} i={i} />
+              <InstrumentCard key={i.symbol} i={i} onOpen={setOpen} />
             ))}
           </div>
         </section>
       ))}
       {sectors && (
         <section>
-          <SectionTitle>{sectors.title}</SectionTitle>
+          <SectionTitle aside={<Help topic="mercado.sectores" />}>{sectors.title}</SectionTitle>
           <div className="instruments">
             {sectors.items.map((i) => (
-              <InstrumentCard key={i.symbol} i={i} />
+              <InstrumentCard key={i.symbol} i={i} onOpen={setOpen} />
             ))}
           </div>
         </section>
       )}
+      {open && <ChartDrawer inst={open} onClose={() => setOpen(undefined)} />}
       {data?.missing.length ? <p className="muted small">Sin datos: {data.missing.join(", ")}</p> : null}
     </>
   );

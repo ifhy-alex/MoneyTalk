@@ -11,7 +11,7 @@ from moneytalk.categorization.ai import AiCategorizer, ClaudeCategorizer
 from moneytalk.categorization.service import categorize
 from moneytalk.config import Settings, get_settings
 from moneytalk.ingestion import service
-from moneytalk.ingestion.gmail import GmailSource, MailSource
+from moneytalk.ingestion.gmail import GmailSource, MailSource, build_query
 from moneytalk.models import RawDocument, SourceType, Transaction
 
 
@@ -38,14 +38,22 @@ def ingest_gmail(
             )
         )
         # Un día de traslape: Gmail filtra `after:` por fecha, no por hora.
-        newer_than = (last.date() - timedelta(days=1)) if last else None
+        newer_than = (
+            (last.date() - timedelta(days=1))
+            if last
+            else date.today() - timedelta(days=settings.gmail_initial_days)  # noqa: DTZ011
+        )
     mail = source or GmailSource(settings.gmail_token_file)
     return service.ingest_emails(
         db,
-        mail.fetch(settings.gmail_label, newer_than),
+        mail.fetch(build_query(settings.gmail_label, extra_senders(settings), newer_than)),
         on_new=on_new_transaction,
         passwords=pdf_passwords(settings),
     )
+
+
+def extra_senders(settings: Settings) -> list[str]:
+    return [s.strip() for s in settings.gmail_extra_senders.split(",") if s.strip()]
 
 
 def pdf_passwords(settings: Settings) -> list[str]:

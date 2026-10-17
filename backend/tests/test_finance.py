@@ -176,7 +176,7 @@ def test_weekly_summary_and_telegram(db: Session) -> None:
 
 
 def test_dashboard_and_goals_api(client: TestClient, db: Session) -> None:
-    assert client.get("/api/dashboard", params={"month": "2026-10"}).status_code == 409  # sin FX
+    assert client.get("/api/dashboard", params={"period": "2026-10"}).status_code == 409  # sin FX
     f.rate(db, date(2026, 5, 1))
     f.txn(db, date(2026, 10, 2), "-10000", "AUTO MERCADO", category_name="Supermercado")
     sup = f.category(db, "Supermercado")
@@ -208,13 +208,35 @@ def test_dashboard_and_goals_api(client: TestClient, db: Session) -> None:
         json={"date": "2026-10-01", "amount": "250000"},
     )
 
-    dash = client.get("/api/dashboard", params={"month": "2026-10"}).json()
+    dash = client.get("/api/dashboard", params={"period": "2026-10"}).json()
     assert Decimal(dash["expenses"]) == Decimal("10000")
     assert dash["budgets"][0]["ratio"] == 0.2
     goal = dash["goals"][0]
     assert goal["ratio"] == 0.25 and goal["months_to_target"] == 8
-    assert len(dash["trend"]) == 6
+    assert len(dash["trend"]) == 12
 
     prefs = client.put("/api/preferences", json={"emergency_fund_months": 4}).json()
     assert prefs["emergency_fund_months"] == 4
     assert client.put("/api/preferences", json={"emergency_fund_months": 99}).status_code == 422
+
+
+def test_dashboard_year_view_and_extra_series(client: TestClient, db: Session) -> None:
+    f.rate(db, date(2026, 1, 1))
+    sup = f.category(db, "Supermercado")
+    db.add(Budget(category_id=sup.id, amount=Decimal("100000"), currency="CRC"))
+    f.txn(db, date(2026, 3, 2), "-30000", "PALI", category_name="Supermercado")
+    f.txn(db, date(2026, 10, 5), "-20000", "PALI", category_name="Supermercado")
+    f.txn(db, date(2026, 10, 6), "-5000", "SODA X")
+    year = client.get("/api/dashboard", params={"period": "2026"}).json()
+    assert year["granularity"] == "year"
+    assert Decimal(year["expenses"]) == Decimal("55000")
+    assert next(p["month"] for p in year["trend"]) == "2026-01" and len(year["trend"]) == 12
+    assert year["top_merchants"][0]["merchant"] == "PALI"
+    assert year["top_merchants"][0]["count"] == 2
+    assert Decimal(year["budgets"][0]["spent"]) == Decimal("50000")
+
+    month = client.get("/api/dashboard", params={"period": "2026-10"}).json()
+    assert month["granularity"] == "month" and len(month["trend"]) == 12
+    assert Decimal(month["daily"][5]["cumulative_expenses"]) == Decimal("25000")
+    assert Decimal(month["by_weekday"]["Lun"]) == Decimal("20000")  # 5/10/2026 es lunes
+    assert client.get("/api/dashboard", params={"period": ""}).status_code == 422

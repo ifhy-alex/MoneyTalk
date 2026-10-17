@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated, Any
 
@@ -27,6 +27,7 @@ from moneytalk.models import (
     Alert,
     AlertKind,
     Budget,
+    CategoryKind,
     CategoryStatus,
     ExchangeRate,
     Goal,
@@ -329,6 +330,9 @@ def write_prefs(db: DB, body: dict[str, Any]) -> Preferences:
 
 # --- Dashboard ---
 
+Period = Annotated[str, Query(pattern=r"^\d{4}(-\d{2})?$", description="AAAA-MM o AAAA")]
+WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+
 
 class MonthPoint(BaseModel):
     month: str
@@ -336,8 +340,22 @@ class MonthPoint(BaseModel):
     expenses: Decimal
 
 
+class DayPoint(BaseModel):
+    date: str
+    expenses: Decimal
+    income: Decimal
+    cumulative_expenses: Decimal
+
+
+class MerchantPoint(BaseModel):
+    merchant: str
+    amount: Decimal
+    count: int
+
+
 class DashboardOut(BaseModel):
-    month: str
+    period: str
+    granularity: str  # month | year
     base_currency: str
     income: Decimal
     expenses: Decimal
@@ -346,6 +364,9 @@ class DashboardOut(BaseModel):
     by_category: dict[str, Decimal]
     uncategorized_expenses: Decimal
     trend: list[MonthPoint]
+    daily: list[DayPoint]
+    top_merchants: list[MerchantPoint]
+    by_weekday: dict[str, Decimal]
     budgets: list[BudgetStatusOut]
     goals: list[GoalOut]
     fx: RateOut | None
@@ -353,23 +374,100 @@ class DashboardOut(BaseModel):
     pending_categorization: int
 
 
+def _budgets_for_year(
+    db: Session, year: int, fx: FxConverter, today: date
+) -> list[BudgetStatusOut]:
+    """Suma presupuesto y gasto de los meses transcurridos del año."""
+    last_month = 12 if year < today.year else today.month
+    acc: dict[int, BudgetStatusOut] = {}
+    for m in range(1, last_month + 1):
+        for s in budget_status(db, date(year, m, 1), fx):
+            row = acc.get(s.category_id)
+            if row is None:
+                acc[s.category_id] = BudgetStatusOut(
+                    budget_id=s.budget_id,
+                    category_id=s.category_id,
+                    category=s.category,
+                    currency=s.currency,
+                    budgeted=s.budgeted,
+                    spent=s.spent,
+                    remaining=s.remaining,
+                    ratio=0,
+                    is_override=False,
+                )
+            else:
+                row.budgeted += s.budgeted
+                row.spent += s.spent
+                row.remaining = row.budgeted - row.spent
+    for row in acc.values():
+        row.ratio = float(row.spent / row.budgeted) if row.budgeted else 0.0
+    return sorted(acc.values(), key=lambda r: r.category)
+
+
 @router.get("/dashboard", response_model=DashboardOut)
-def dashboard(db: DB, month: Month) -> DashboardOut:
-    m = parse_month(month)
+def dashboard(db: DB, period: Period) -> DashboardOut:
     fx = _fx(db)
-    start, end = month_bounds(m)
-    current = totals(transactions_between(db, start, end), fx)
+    today = today_cr(get_settings())
+    is_year = len(period) == 4
+    if is_year:
+        year = int(period)
+        start, end = date(year, 1, 1), date(year, 12, 31)
+        months = [date(year, m, 1) for m in range(1, 13)]
+    else:
+        m = parse_month(period)
+        start, end = month_bounds(m)
+        months = [add_months(m, -i) for i in range(11, -1, -1)]
+
+    txns = transactions_between(db, start, end)
+    current = totals(txns, fx)
 
     trend = []
-    for i in range(5, -1, -1):
-        tm = add_months(m, -i)
+    for tm in months:
         ts, te = month_bounds(tm)
         t = totals(transactions_between(db, ts, te), fx)
         trend.append(MonthPoint(month=f"{tm:%Y-%m}", income=t.income, expenses=t.expenses))
 
+    # Serie diaria (o mensual en vista anual) con gasto acumulado.
+    daily: list[DayPoint] = []
+    if not is_year:
+        cum = Decimal(0)
+        day = start
+        while day <= min(end, today if today >= start else end):
+            t = totals([x for x in txns if x.txn_date == day], fx)
+            cum += t.expenses
+            daily.append(
+                DayPoint(
+                    date=day.isoformat(),
+                    expenses=t.expenses,
+                    income=t.income,
+                    cumulative_expenses=cum,
+                )
+            )
+            day += timedelta(days=1)
+    else:
+        cum = Decimal(0)
+        for p in trend:
+            cum += p.expenses
+            daily.append(
+                DayPoint(
+                    date=p.month, expenses=p.expenses, income=p.income, cumulative_expenses=cum
+                )
+            )
+
+    merchants: dict[str, list[Decimal]] = {}
+    weekday = {d: Decimal(0) for d in WEEKDAYS}
+    for txn in txns:
+        if txn.amount >= 0 or (txn.category and txn.category.kind is CategoryKind.TRANSFER):
+            continue
+        crc = -fx.convert(txn.amount, txn.currency, "CRC", txn.txn_date)
+        merchants.setdefault(txn.merchant_normalized, []).append(crc)
+        weekday[WEEKDAYS[txn.txn_date.weekday()]] += crc
+    top = sorted(merchants.items(), key=lambda kv: sum(kv[1]), reverse=True)[:8]
+
     rate = latest_rate(db)
     return DashboardOut(
-        month=month,
+        period=period,
+        granularity="year" if is_year else "month",
         base_currency="CRC",
         income=current.income,
         expenses=current.expenses,
@@ -378,7 +476,14 @@ def dashboard(db: DB, month: Month) -> DashboardOut:
         by_category=dict(sorted(current.by_category.items(), key=lambda kv: kv[1], reverse=True)),
         uncategorized_expenses=current.uncategorized_expenses,
         trend=trend,
-        budgets=list_budgets(db, month),
+        daily=daily,
+        top_merchants=[
+            MerchantPoint(merchant=k, amount=sum(v, Decimal(0)), count=len(v)) for k, v in top
+        ],
+        by_weekday=weekday,
+        budgets=_budgets_for_year(db, int(period[:4]), fx, today)
+        if is_year
+        else list_budgets(db, period),
         goals=list_goals(db),
         fx=RateOut.model_validate(rate) if rate else None,
         unread_alerts=db.scalar(

@@ -5,6 +5,8 @@ import { ErrorNotice, Progress } from "../components/ui";
 import { currentMonth, money, pct } from "../format";
 import { useApi } from "../hooks";
 import type { BudgetStatus } from "../types-finance";
+import Help from "../components/Help";
+import PeriodPicker from "../components/PeriodPicker";
 
 export default function Budget() {
   const [month, setMonth] = useState(currentMonth());
@@ -40,12 +42,15 @@ export default function Budget() {
     <>
       <div className="page-head">
         <div>
-          <h1>Presupuesto mensual</h1>
+          <div className="title-row">
+            <h1>Presupuesto mensual</h1>
+            <Help topic="presupuesto" />
+          </div>
           <div className="muted">
             Un presupuesto puede estar en colones o dólares; el gasto en la otra moneda se convierte con el BCCR.
           </div>
         </div>
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+        <PeriodPicker value={month} onChange={setMonth} />
       </div>
       <ErrorNotice error={error ?? budgets.error} />
 

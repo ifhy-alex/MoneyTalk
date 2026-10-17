@@ -1,159 +1,153 @@
 # MoneyTalk
 
-Sistema personal de finanzas e inversiones, local primero. Registra gastos a partir de
-correos de notificación y estados de cuenta en PDF, los categoriza, controla presupuesto
-y metas, y ayuda a analizar inversiones con criterios explícitos y auditables.
+**Tus finanzas personales e inversiones en un solo lugar, en tu propia computadora.**
 
-> **Aviso:** las secciones de inversiones muestran señales calculadas con criterios que
-> vos definís, con su evidencia. No son asesoría financiera ni recomendaciones de compra
-> o venta.
+MoneyTalk lee tus movimientos bancarios a partir de los correos de notificación y de los
+estados de cuenta en PDF, los ordena por categoría y te muestra en qué se va tu dinero,
+cómo vas con tu presupuesto y tus metas, y qué está pasando en los mercados. Está pensado
+para Costa Rica (colones y dólares, bancos locales, tipo de cambio del BCCR), pero sirve
+para cualquiera.
 
-## Arquitectura
+> ⚠️ **No es asesoría financiera.** Las secciones de inversiones muestran datos y señales
+> calculadas con criterios que vos definís, siempre con su evidencia. Nunca son
+> recomendaciones de compra o venta.
 
+## Qué podés hacer
+
+| Sección | Para qué sirve |
+|---|---|
+| **Resumen** | Ingresos, gastos y ahorro del mes o del año, gasto por categoría, evolución de 12 meses y ritmo de gasto |
+| **Transacciones** | Todos tus movimientos, sin duplicados; los clasificás con un clic y la app aprende reglas |
+| **Presupuesto y metas** | Topes mensuales por categoría y metas de ahorro (con el fondo de emergencia primero) |
+| **Alertas** | Gastos inusuales, presupuestos al límite y suscripciones nuevas o duplicadas, también por Telegram |
+| **Mercado** | Índices, ETFs, empresas grandes, sectores, oro, petróleo y bitcoin, con tendencias y gráficos de hasta 5 años |
+| **Portafolio** | Tus inversiones, su rendimiento y la comparación contra el S&P 500 |
+| **Screener, reportes, comparador y backtesting** | Herramientas para analizar empresas, entender sus reportes trimestrales y comparar con CDP y fondos locales |
+
+Cada sección tiene un botón **?** que explica qué es, cómo se calcula y qué significa cada dato.
+
+## Privacidad
+
+- **Todo corre en tu computadora.** Tu información queda en una base de datos local; no hay
+  servidores de terceros.
+- **Nunca entra a tu banca en línea** ni te pide claves del banco.
+- Gmail se conecta con permiso de **solo lectura**: la app no puede enviar, borrar ni
+  modificar correos.
+- Antes de guardar cualquier documento se **enmascaran** los números de cuenta, tarjeta e
+  IBAN (quedan solo los últimos 4 dígitos), los teléfonos de SINPE y tu nombre.
+- Las contraseñas y llaves van únicamente en el archivo `.env`, que nunca se sube a git.
+
+## Instalación
+
+### 1. Requisitos
+
+- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** (Windows, macOS o
+  Linux). Es lo único obligatorio.
+- **Git**, para descargar el proyecto.
+
+### 2. Descargar y configurar
+
+```bash
+git clone https://github.com/ifhy-alex/MoneyTalk.git
 ```
-docker compose
-├─ db      Postgres 17 (puerto 127.0.0.1:5433)
-├─ api     FastAPI + SQLAlchemy 2 + Alembic (127.0.0.1:8000, docs en /docs)
-├─ worker  APScheduler: Gmail cada 30 min, tipo de cambio, alertas, resumen semanal
-└─ web     React + Vite + TypeScript + Recharts (127.0.0.1:5173)
+
+```bash
+cd MoneyTalk
 ```
 
-| Módulo | Dónde | Qué hace |
-|---|---|---|
-| Ingesta | `backend/src/moneytalk/ingestion/` | Parsers por banco (patrón estrategia), Gmail solo lectura, PDF con PyMuPDF, deduplicación |
-| Categorización | `categorization/` | Reglas → memoria por comercio → Claude (solo sugerencia) |
-| Finanzas | `finance/` | Tipo de cambio BCCR, presupuesto, metas, alertas, resumen semanal |
-| Inversiones | `investments/` | Proveedores de mercado con caché, SEC EDGAR, screener, portafolio, comparador, backtesting, reportes |
-
-## Puesta en marcha (Windows)
-
-Requisitos: Docker Desktop, [uv](https://docs.astral.sh/uv/) y Node 22.
+Copiá el archivo de configuración de ejemplo (en Windows, desde PowerShell, usá `copy` en
+lugar de `cp`):
 
 ```bash
 cp .env.example .env
 ```
 
-Editá `.env` (como mínimo `POSTGRES_PASSWORD` y las URLs que la usan) y levantá todo:
+Abrí `.env` con cualquier editor y cambiá `cambia-esto` por una contraseña propia en
+`POSTGRES_PASSWORD` y en las dos líneas `DATABASE_URL` que la repiten. Todo lo demás es
+opcional.
+
+### 3. Arrancar
 
 ```bash
 docker compose up -d --build
 ```
 
-Abrí http://localhost:5173. Las migraciones corren solas al arrancar la API.
+La primera vez tarda unos minutos. Cuando termine, abrí **http://localhost:5173**.
 
-Para desarrollo y pruebas en el host:
+Para detenerla:
 
 ```bash
-cd backend && uv sync && uv run pytest
+docker compose down
 ```
 
-> En Windows usá `127.0.0.1` y no `localhost` en `DATABASE_URL`: `localhost` resuelve
-> primero a IPv6 (`::1`), Docker publica solo en IPv4 y la conexión se queda colgada.
+Tus datos se conservan entre reinicios. Para borrar todo y empezar de cero:
+`docker compose down -v`.
 
-## Integraciones (todas opcionales)
+## Cargar tus movimientos
 
-| Integración | Variables | Cómo obtenerla |
-|---|---|---|
-| Gmail (solo lectura) | `GMAIL_LABEL` | Google Cloud → habilitar Gmail API → OAuth client *Desktop* → `data/gmail_credentials.json`. Luego `cd backend && uv run moneytalk gmail-auth` (en el host, abre el navegador). Creá un filtro en Gmail que etiquete los correos de tus bancos. |
-| Tipo de cambio BCCR | `BCCR_EMAIL`, `BCCR_TOKEN` | Suscripción gratuita al servicio web de indicadores económicos del BCCR. **Sin token** se usa el tipo de cambio de mercado de Yahoo (`CRC=X`), actualizado cada hora y marcado como "mercado". Un dato de mercado nunca reemplaza uno oficial del BCCR. |
-| Claude | `ANTHROPIC_API_KEY`, `CLAUDE_MODEL` | Solo se usa para categorías dudosas y resúmenes de reportes. Solo se envían el comercio, el monto y la moneda (nunca tarjetas ni cuentas). Usa `fallbacks="default"`: si el modelo declina, el servidor reintenta con otro. |
-| Telegram | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | @BotFather → token; escribile al bot y consultá `getUpdates` para obtener el chat_id. |
-| Mercado | `MARKET_PROVIDER` (`yfinance`, `fmp`, `alphavantage`) + keys | yfinance no requiere key. Las respuestas se cachean `MARKET_CACHE_TTL_HOURS`. |
-| SEC EDGAR | `SEC_USER_AGENT` | La SEC exige un User-Agent con nombre y **tu correo real**. |
+En Costa Rica no hay una forma oficial y segura de conectarse directamente a la banca en
+línea de una persona, así que MoneyTalk usa tres caminos seguros:
 
-## CLI
+1. **Subir un PDF** (página **Ingesta**): el estado de cuenta o el reporte de movimientos que
+   descargás de tu banco. Si está protegido, escribís la contraseña y no se guarda.
+2. **Carpeta de entrada:** guardá los PDF en `data/inbox/` y se importan solos en un par de
+   minutos.
+3. **Gmail, automático:** activá en tu banco los avisos por correo de cada compra y
+   conectá Gmail desde **Ingesta → Gmail**. La app busca los correos de los bancos de Costa
+   Rica cada 30 minutos.
 
-Desde `backend/` (o dentro del contenedor con `docker compose exec api moneytalk ...`):
+Si un mismo gasto llega por correo y por PDF, aparece una sola vez.
 
-| Comando | Qué hace |
-|---|---|
-| `uv run moneytalk gmail-auth` | Autoriza Gmail (una vez) |
-| `uv run moneytalk ingest-gmail` | Lee correos nuevos de la etiqueta |
-| `uv run moneytalk ingest-pdf estado.pdf --password` | Importa PDFs (pide la contraseña si está protegido; no se guarda) |
-| `uv run moneytalk reprocess` | Reprocesa documentos fallidos o leídos con un parser viejo |
-| `uv run moneytalk fx-sync` | Descarga el tipo de cambio del BCCR |
-| `uv run moneytalk alerts` | Evalúa alertas y notifica |
-| `uv run moneytalk weekly-summary` | Envía el resumen semanal |
+### Conectar Gmail (una sola vez, ~5 minutos)
 
-## Actualización automática de movimientos
+Google exige que cada persona cree su propio acceso. Esto garantiza que nadie más que vos
+tenga permiso sobre tu correo.
 
-En Costa Rica no hay una API bancaria abierta para personas, y entrar a tu banca en
-línea con tu usuario y contraseña (scraping) es inseguro y viola los términos del banco.
-Por eso MoneyTalk usa tres vías seguras:
-
-1. **Notificaciones por correo (automático):** activá en tu banco los avisos por correo de
-   cada compra o transferencia, y en Gmail creá un filtro que les ponga la etiqueta
-   `GMAIL_LABEL`. El worker las lee cada 30 minutos con permiso de **solo lectura**. Si el
-   correo trae el estado de cuenta adjunto en PDF, también se importa.
-2. **Carpeta de entrada (semiautomático):** guardá los PDF que descargués en `data/inbox/`.
-   El worker los importa cada 2 minutos y los mueve a `procesados/` o `errores/`. Las
-   contraseñas de PDFs protegidos van en `STATEMENT_PDF_PASSWORDS` (solo en `.env`).
-3. **Subida manual** desde la página Ingesta.
-
-Los duplicados entre correo y PDF se fusionan solos.
+1. Entrá a [Google Cloud Console](https://console.cloud.google.com/), creá un proyecto y
+   habilitá la **Gmail API**.
+2. En **Pantalla de consentimiento OAuth**, elegí *Externo*, dejala en modo de prueba y
+   agregá tu correo como *usuario de prueba*.
+3. En **Credenciales → Crear credenciales → ID de cliente OAuth**, elegí **App de escritorio**
+   y descargá el JSON.
+4. En MoneyTalk, **Ingesta → Gmail → Subir JSON del cliente** y después **Conectar Gmail**.
 
 ### Bancos soportados
 
-| Banco | Fuente | Parser |
+| Banco | Qué lee | Estado |
 |---|---|---|
-| BAC Credomatic | Correo de notificación, estado de tarjeta (PDF) | `bac.py` (formato supuesto: falta validar con ejemplos reales) |
-| Banco Nacional | Correo de notificación | `bn.py` (formato supuesto: falta validar con ejemplos reales) |
-| Banco Popular | "Reporte de Movimientos" de cuenta (PDF) | `popular.py` (validado con un reporte real; verifica el saldo fila por fila) |
+| Banco Popular | Reporte de movimientos de cuenta (PDF) | Probado con reportes reales; valida el saldo fila por fila |
+| BAC Credomatic | Correos de notificación y estado de tarjeta (PDF) | Basado en el formato típico; falta validar con ejemplos reales |
+| Banco Nacional | Correos de notificación | Basado en el formato típico; falta validar con ejemplos reales |
+| BCR, Davivienda, Promerica, LAFISE, BCT, Cathay, Improsa, cooperativas y mutuales | Correos de notificación | Se reciben y guardan; se procesan cuando exista su lector |
 
-**Privacidad:** antes de guardarse, todo documento se enmascara: IBAN, números de cuenta y
-tarjeta (quedan los últimos 4 dígitos), teléfonos de SINPE, nombre del titular y correos.
+¿Tu banco no está o falla? Abrí un *issue* con un ejemplo **anonimizado** (sin números de
+cuenta ni nombres) y se agrega su lector. Ver [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 
-## Mercado
+## Configuración opcional
 
-La página **Mercado** muestra índices de EE. UU., VIX, el bono a 10 años, el índice del
-dólar, USD/CRC, oro, petróleo, bitcoin, los 11 sectores del S&P 500 y tus posiciones. Para
-cada uno calcula el rendimiento de 1 día a 12 meses, el precio frente a sus medias móviles
-de 50 y 200 sesiones, la distancia al máximo de 52 semanas y la volatilidad. Los datos son
-reales (Yahoo Finance, ~15 min de retraso para EE. UU.) y se cachean 15 minutos; el botón
-"Actualizar ahora" fuerza la descarga.
+Todo se configura en `.env`. Nada de esto es obligatorio:
 
-## Agregar un banco nuevo
+| Qué | Variables | Para qué |
+|---|---|---|
+| Tipo de cambio oficial | `BCCR_EMAIL`, `BCCR_TOKEN` | Suscripción gratuita al [servicio web del BCCR](https://www.bccr.fi.cr/indicadores-economicos/servicio-web). Sin esto se usa el tipo de cambio de mercado |
+| Categorización con IA | `ANTHROPIC_API_KEY` | Claude sugiere categorías para comercios nuevos y explica reportes trimestrales. Solo recibe el comercio, el monto y la moneda |
+| Telegram | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Alertas y resumen semanal en tu celular. Creá el bot con @BotFather |
+| Datos oficiales de la SEC | `SEC_USER_AGENT` | Poné tu nombre y correo real: la SEC lo exige para consultar estados financieros |
+| PDFs con contraseña | `STATEMENT_PDF_PASSWORDS` | Para la carpeta de entrada y los adjuntos de Gmail |
 
-1. Creá `ingestion/parsers/<banco>.py` con una clase que herede de `EmailParser` o
-   `StatementParser` (`can_parse` + `parse` → `list[ParsedTransaction]`).
-2. Registrala en `ingestion/parsers/__init__.py`.
-3. Agregá un ejemplo **anonimizado** en `tests/fixtures/` y su prueba.
+Después de cambiar `.env`, reiniciá con `docker compose up -d`.
 
-Si cambiás un parser, subí su `version`: `moneytalk reprocess` vuelve a leer los documentos
-viejos desde el texto crudo guardado.
+## Preguntas frecuentes
 
-## Decisiones técnicas
+**¿Los datos de la bolsa son reales?** Sí: vienen de Yahoo Finance, con unos 15 minutos de
+retraso para EE. UU., y se actualizan cada 15 minutos.
 
-- **Una transacción canónica con varias fuentes.** El correo y el estado de cuenta describen
-  el mismo gasto con textos y fechas distintos. La deduplicación exige la misma cuenta,
-  moneda y monto, una fecha a ±3 días y un **tipo de fuente distinto** (dos correos idénticos
-  pueden ser dos compras reales). El puntaje queda guardado en `match_confidence`.
-- **Cuentas bimoneda.** La moneda no identifica la tarjeta; cada transacción guarda la suya.
-- **Monto con signo** (negativo = salida) en `NUMERIC(14,2)`; nunca `float` para dinero.
-- **Enums como VARCHAR + CHECK** en lugar de ENUM nativo de Postgres, que es más fácil de
-  migrar. `scripts/clean_enum_checks.py` limpia los CHECK duplicados que genera el autogenerate.
-- **Transferencias** (pago de tarjeta, entre cuentas) no cuentan como gasto ni ingreso;
-  si contaran, el gasto aparecería dos veces.
-- **Conversión USD→CRC con el tipo de venta** del día de cada transacción (vista
-  conservadora para presupuesto).
-- **Backtesting point-in-time:** usa solo los 10-K *presentados* antes de cada fecha de
-  rebalanceo, para no usar información del futuro.
-- **APScheduler en un proceso aparte** (`worker`): con `--reload` en la API los jobs se
-  duplicarían. Celery no se justifica para un solo usuario.
-- **Sin acceso a banca en línea**: solo correos y PDFs. No se guardan contraseñas bancarias
-  ni números completos (CHECK `last4 ~ '^[0-9]{4}$'`); los logs enmascaran tarjetas,
-  IBAN y correos.
+**¿Cómo actualizo la app?** `git pull` y luego `docker compose up -d --build`.
 
-## Calidad
+**¿Puedo usarla sin Docker?** Sí, para desarrollo: mirá
+[docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 
-`ruff`, `mypy --strict`, `pytest` contra Postgres real (cada prueba corre en una
-transacción que se revierte) y ESLint + `tsc` en el frontend. La CI está en
-`.github/workflows/ci.yml`.
+## Tecnología
 
-## Datos de ejemplo
-
-Todos los fixtures son sintéticos. Para empezar de cero con la base local:
-
-```bash
-docker compose down -v
-```
+Python 3.12 · FastAPI · SQLAlchemy · PostgreSQL · React · TypeScript · Recharts · Docker.
+Detalles técnicos y decisiones de diseño en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).

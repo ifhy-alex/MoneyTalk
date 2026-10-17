@@ -45,7 +45,8 @@ export interface Alert {
 }
 
 export interface Dashboard {
-  month: string;
+  period: string;
+  granularity: "month" | "year";
   base_currency: string;
   income: string;
   expenses: string;
@@ -54,6 +55,9 @@ export interface Dashboard {
   by_category: Record<string, string>;
   uncategorized_expenses: string;
   trend: { month: string; income: string; expenses: string }[];
+  daily: { date: string; expenses: string; income: string; cumulative_expenses: string }[];
+  top_merchants: { merchant: string; amount: string; count: number }[];
+  by_weekday: Record<string, string>;
   budgets: BudgetStatus[];
   goals: Goal[];
   fx: Rate | null;

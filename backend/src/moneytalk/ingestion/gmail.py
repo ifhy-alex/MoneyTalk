@@ -1,23 +1,25 @@
-"""Lector de Gmail con permiso de SOLO LECTURA, filtrado por etiqueta.
+"""Lector de Gmail con permiso de SOLO LECTURA.
 
-Configuración (una vez):
+Por defecto busca los correos de los bancos de Costa Rica por remitente (ver `banks.py`);
+opcionalmente se puede limitar a una etiqueta de Gmail.
+
+Configuración (una vez), desde la página Ingesta de la app:
 1. Google Cloud Console → crear proyecto → habilitar "Gmail API".
-2. Pantalla de consentimiento OAuth en modo "Testing" con tu cuenta como usuario de prueba.
-3. Credenciales → "OAuth client ID" tipo *Desktop app* → descargar como
-   `data/gmail_credentials.json`.
-4. En el host (no en Docker, porque abre el navegador): `uv run moneytalk gmail-auth`.
-   Esto crea `data/gmail_token.json`, que el contenedor reutiliza.
-5. En Gmail, creá un filtro que aplique la etiqueta (ej. `Finanzas/Bancos`) a los correos
-   de notificaciones de tus bancos.
+2. Pantalla de consentimiento OAuth en modo "Testing", con tu cuenta como usuario de prueba.
+3. Credenciales → "OAuth client ID" tipo *Desktop app* → descargar el JSON.
+4. Subir ese JSON en Ingesta → "Conectar Gmail" → autorizar en la ventana de Google.
+   (Alternativa por consola, en el host: `uv run moneytalk gmail-auth`.)
 """
 
 import base64
+import json
 import logging
 from collections.abc import Iterator
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
+from moneytalk.ingestion.banks import sender_query
 from moneytalk.ingestion.text import html_to_text
 from moneytalk.ingestion.types import EmailMessage
 
@@ -27,7 +29,43 @@ SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 
 class MailSource(Protocol):
-    def fetch(self, label: str, newer_than: date | None = None) -> Iterator[EmailMessage]: ...
+    def fetch(self, query: str) -> Iterator[EmailMessage]: ...
+
+
+def build_query(label: str, extra_senders: list[str], newer_than: date | None) -> str:
+    """Etiqueta si está configurada; si no, remitentes de bancos de CR."""
+    if label:
+        base = "label:" + label.strip().lower().replace("/", "-").replace(" ", "-")
+    else:
+        base = sender_query(extra_senders)
+    return f"{base} after:{newer_than:%Y/%m/%d}" if newer_than else base
+
+
+def validate_client_secrets(raw: bytes) -> dict[str, Any]:
+    """Comprueba que el JSON sea un cliente OAuth de Google (tipo Desktop o Web)."""
+    try:
+        data: dict[str, Any] = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("El archivo no es un JSON válido") from exc
+    kind = next((k for k in ("installed", "web") if k in data), None)
+    if kind is None or "client_id" not in data[kind] or "client_secret" not in data[kind]:
+        raise ValueError("No parece un 'OAuth client ID' de Google (falta installed/web)")
+    return data
+
+
+def start_web_flow(credentials_file: Path, redirect_uri: str) -> tuple[str, str, Any]:
+    """Devuelve (URL de autorización, state, flow con su PKCE para completar el callback)."""
+    from google_auth_oauthlib.flow import Flow
+
+    flow = Flow.from_client_secrets_file(str(credentials_file), SCOPES, redirect_uri=redirect_uri)
+    url, state = flow.authorization_url(access_type="offline", prompt="consent")
+    return url, str(state), flow
+
+
+def finish_web_flow(flow: Any, code: str, token_file: Path) -> None:
+    flow.fetch_token(code=code)
+    token_file.parent.mkdir(parents=True, exist_ok=True)
+    token_file.write_text(flow.credentials.to_json(), encoding="utf-8")
 
 
 def authorize(credentials_file: Path, token_file: Path) -> None:
@@ -44,7 +82,7 @@ def _decode(data: str) -> str:
 
 
 def extract_body(payload: dict[str, Any]) -> str:
-    """Prefiere text/plain; si solo hay HTML, lo convierte a texto."""
+    """Prefiere el HTML convertido a texto (conserva Etiqueta/Valor); si no, text/plain."""
     plain: list[str] = []
     html: list[str] = []
 
@@ -60,7 +98,6 @@ def extract_body(payload: dict[str, Any]) -> str:
 
     walk(payload)
     if html:
-        # El HTML de los bancos conserva mejor la estructura Etiqueta/Valor.
         return html_to_text("\n".join(html))
     return "\n".join(plain)
 
@@ -89,19 +126,16 @@ class GmailSource:
         from googleapiclient.discovery import build
 
         if not token_file.exists():
-            raise RuntimeError("Falta el token de Gmail: corré `uv run moneytalk gmail-auth`")
+            raise RuntimeError("Gmail no está conectado: conectalo desde la página Ingesta")
         creds = Credentials.from_authorized_user_file(str(token_file), SCOPES)
         if creds.expired and creds.refresh_token:
             creds.refresh(Request())
             token_file.write_text(creds.to_json(), encoding="utf-8")
         self._service = build("gmail", "v1", credentials=creds, cache_discovery=False)
 
-    def _label_id(self, name: str) -> str:
-        labels = self._service.users().labels().list(userId="me").execute().get("labels", [])
-        for label in labels:
-            if label["name"] == name:
-                return str(label["id"])
-        raise RuntimeError(f"No existe la etiqueta de Gmail {name!r}")
+    def profile_email(self) -> str:
+        profile = self._service.users().getProfile(userId="me").execute()
+        return str(profile.get("emailAddress", ""))
 
     def _attachment(self, message_id: str, attachment_id: str) -> bytes:
         att = (
@@ -113,15 +147,13 @@ class GmailSource:
         )
         return base64.urlsafe_b64decode(att["data"].encode("ascii"))
 
-    def fetch(self, label: str, newer_than: date | None = None) -> Iterator[EmailMessage]:
-        label_id = self._label_id(label)
-        query = f"after:{newer_than:%Y/%m/%d}" if newer_than else None
+    def fetch(self, query: str) -> Iterator[EmailMessage]:
         page_token: str | None = None
         while True:
             resp = (
                 self._service.users()
                 .messages()
-                .list(userId="me", labelIds=[label_id], q=query, pageToken=page_token)
+                .list(userId="me", q=query, pageToken=page_token, maxResults=100)
                 .execute()
             )
             for ref in resp.get("messages", []):

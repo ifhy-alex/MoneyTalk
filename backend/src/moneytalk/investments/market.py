@@ -29,6 +29,15 @@ GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
         ],
     ),
     (
+        "Mundo",
+        [
+            ("^STOXX50E", "Euro Stoxx 50"),
+            ("^FTSE", "FTSE 100 (Reino Unido)"),
+            ("^N225", "Nikkei 225 (Japón)"),
+            ("^HSI", "Hang Seng (Hong Kong)"),
+        ],
+    ),
+    (
         "Riesgo, tasas y monedas",
         [
             ("^VIX", "Volatilidad (VIX)"),
@@ -40,6 +49,30 @@ GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
     (
         "Materias primas y cripto",
         [("GC=F", "Oro"), ("CL=F", "Petróleo WTI"), ("BTC-USD", "Bitcoin")],
+    ),
+    (
+        "ETFs amplios de bajo costo",
+        [
+            ("VOO", "Vanguard S&P 500"),
+            ("VTI", "Vanguard Mercado Total EE. UU."),
+            ("QQQ", "Invesco Nasdaq-100"),
+            ("VXUS", "Vanguard Acciones Internacionales"),
+            ("BND", "Vanguard Bonos Totales EE. UU."),
+            ("SCHD", "Schwab Dividendos EE. UU."),
+        ],
+    ),
+    (
+        "Empresas más grandes",
+        [
+            ("NVDA", "NVIDIA"),
+            ("MSFT", "Microsoft"),
+            ("AAPL", "Apple"),
+            ("AMZN", "Amazon"),
+            ("GOOGL", "Alphabet (Google)"),
+            ("META", "Meta Platforms"),
+            ("BRK-B", "Berkshire Hathaway"),
+            ("TSLA", "Tesla"),
+        ],
     ),
     (
         "Sectores (ETF SPDR)",
@@ -78,9 +111,13 @@ def yahoo_download(symbols: list[str], start: date) -> dict[str, list[tuple[date
     out: dict[str, list[tuple[date, float]]] = {}
     for sym in symbols:
         try:
-            closes = df[sym]["Close"].dropna() if len(symbols) > 1 else df["Close"].dropna()
+            closes = df[sym]["Close"].dropna()
         except KeyError:
-            continue
+            try:  # con un solo símbolo algunas versiones no agrupan por ticker
+                col = df["Close"]
+                closes = (col[sym] if hasattr(col, "columns") else col).dropna()
+            except KeyError:
+                continue
         out[sym] = [(idx.date(), float(v)) for idx, v in closes.items()]
     return out
 
@@ -188,6 +225,45 @@ def overview(
     }
     if row is None:
         row = MarketCache(provider="yahoo", kind="overview", symbol="*", cache_key=key[:64])
+        db.add(row)
+    row.payload = payload
+    row.fetched_at = datetime.now(UTC)
+    db.commit()
+    return payload
+
+
+RANGES: dict[str, int] = {"1M": 31, "3M": 92, "6M": 183, "1A": 366, "5A": 1830}
+
+
+def history(
+    db: Session, symbol: str, range_key: str, today: date, download: Downloader = yahoo_download
+) -> dict[str, Any]:
+    """Serie de cierres para el gráfico detallado de un instrumento (caché de 15 min)."""
+    days = RANGES[range_key]
+    key = f"{range_key}"
+    row = db.scalar(
+        select(MarketCache).where(
+            MarketCache.provider == "yahoo",
+            MarketCache.kind == "chart",
+            MarketCache.symbol == symbol,
+            MarketCache.cache_key == key,
+        )
+    )
+    if row and datetime.now(UTC) - row.fetched_at < CACHE_TTL:
+        cached: dict[str, Any] = row.payload
+        return cached
+    closes = download([symbol], today - timedelta(days=days)).get(symbol, [])
+    if len(closes) > 400:  # ~1 punto por semana en 5 años
+        step = len(closes) // 260 + 1
+        closes = closes[::step] + ([closes[-1]] if (len(closes) - 1) % step else [])
+    payload = {
+        "symbol": symbol,
+        "range": range_key,
+        "points": [{"date": d.isoformat(), "close": round(v, 4)} for d, v in closes],
+        "change": (closes[-1][1] / closes[0][1] - 1) if len(closes) > 1 and closes[0][1] else None,
+    }
+    if row is None:
+        row = MarketCache(provider="yahoo", kind="chart", symbol=symbol, cache_key=key)
         db.add(row)
     row.payload = payload
     row.fetched_at = datetime.now(UTC)

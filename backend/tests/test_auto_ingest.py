@@ -1,5 +1,4 @@
 from collections.abc import Iterator
-from datetime import date
 from pathlib import Path
 
 import pymupdf
@@ -58,7 +57,7 @@ def test_gmail_pdf_attachments_are_ingested(db: Session) -> None:
     )
 
     class Fake:
-        def fetch(self, label: str, newer_than: date | None = None) -> Iterator[EmailMessage]:
+        def fetch(self, query: str) -> Iterator[EmailMessage]:
             yield msg
 
     result = ingest_gmail(db, Settings(), source=Fake())

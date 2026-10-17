@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api } from "../api";
 import { Disclaimer, ErrorNotice } from "../components/ui";
 import { num, pct } from "../format";
+import Help from "../components/Help";
 
 interface Row {
   metric: string;
@@ -48,7 +49,10 @@ export default function Reports() {
     <>
       <div className="page-head">
         <div>
-          <h1>Reportes trimestrales</h1>
+          <div className="title-row">
+            <h1>Reportes trimestrales</h1>
+            <Help topic="reportes" />
+          </div>
           <div className="muted">
             Cambios del último 10-Q según la SEC. La IA solo redacta a partir de esta tabla.
           </div>

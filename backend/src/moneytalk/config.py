@@ -17,7 +17,12 @@ class Settings(BaseSettings):
 
     gmail_credentials_file: Path = Path("data/gmail_credentials.json")
     gmail_token_file: Path = Path("data/gmail_token.json")
-    gmail_label: str = "Finanzas/Bancos"
+    # Vacío = buscar por remitentes de bancos de CR (recomendado). Con valor = solo esa etiqueta.
+    gmail_label: str = ""
+    # Dominios adicionales de remitentes, separados por coma.
+    gmail_extra_senders: str = ""
+    # Primera sincronización: cuántos días hacia atrás leer.
+    gmail_initial_days: int = 120
     # Carpeta vigilada: cualquier PDF que dejés aquí se importa solo.
     inbox_dir: Path = Path("data/inbox")
     # Contraseñas de PDFs protegidos (separadas por coma). Opcional; solo en .env.

@@ -5,6 +5,7 @@ import { ErrorNotice, Progress } from "../components/ui";
 import { money, pct } from "../format";
 import { useApi } from "../hooks";
 import type { Goal } from "../types-finance";
+import Help from "../components/Help";
 
 interface EfSuggestion {
   months: number;
@@ -56,7 +57,10 @@ export default function Goals() {
     <>
       <div className="page-head">
         <div>
-          <h1>Metas de ahorro</h1>
+          <div className="title-row">
+            <h1>Metas de ahorro</h1>
+            <Help topic="metas" />
+          </div>
           <div className="muted">El fondo de emergencia siempre va primero.</div>
         </div>
       </div>

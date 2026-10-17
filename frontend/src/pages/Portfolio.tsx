@@ -5,6 +5,7 @@ import { api } from "../api";
 import { CHART, Disclaimer, ErrorNotice, Stat } from "../components/ui";
 import { money, num, pct } from "../format";
 import { useApi } from "../hooks";
+import Help from "../components/Help";
 
 interface PositionRow {
   symbol: string;
@@ -130,7 +131,10 @@ export default function Portfolio() {
     <>
       <div className="page-head">
         <div>
-          <h1>Portafolio</h1>
+          <div className="title-row">
+            <h1>Portafolio</h1>
+            <Help topic="portafolio" />
+          </div>
           <div className="muted">Registro manual de posiciones; precios del proveedor configurado (con caché).</div>
         </div>
       </div>

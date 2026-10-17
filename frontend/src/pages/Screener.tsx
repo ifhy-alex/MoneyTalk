@@ -4,6 +4,7 @@ import { api } from "../api";
 import { Disclaimer, ErrorNotice } from "../components/ui";
 import { num, pct } from "../format";
 import { useApi } from "../hooks";
+import Help from "../components/Help";
 
 type Op = ">=" | "<=" | ">" | "<" | "between";
 interface Criterion {
@@ -112,7 +113,10 @@ export default function Screener() {
     <>
       <div className="page-head">
         <div>
-          <h1>Screener fundamental</h1>
+          <div className="title-row">
+            <h1>Screener fundamental</h1>
+            <Help topic="screener" />
+          </div>
           <div className="muted">Filtros explícitos; cada resultado muestra qué criterio cumplió, con qué valor y de dónde salió.</div>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { api, type Category, type MatchType, type Rule } from "../api";
 import { useApi } from "../hooks";
+import Help from "../components/Help";
 
 interface Preview {
   matches: number;
@@ -60,7 +61,10 @@ export default function Rules() {
     <>
       <div className="page-head">
         <div>
-          <h1>Reglas de categorización</h1>
+          <div className="title-row">
+            <h1>Reglas de categorización</h1>
+            <Help topic="reglas" />
+          </div>
           <div className="muted">
             Se evalúan por prioridad (mayor primero) sobre el comercio normalizado. Gana la primera.
           </div>

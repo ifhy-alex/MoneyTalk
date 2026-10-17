@@ -8,6 +8,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    // En Docker sobre Windows los cambios de archivos no generan eventos: usar sondeo.
+    watch: process.env.VITE_POLLING === "1" ? { usePolling: true, interval: 300 } : undefined,
     proxy: { "/api": { target: apiTarget, changeOrigin: true } },
   },
 });

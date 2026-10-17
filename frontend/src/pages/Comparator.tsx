@@ -4,6 +4,7 @@ import { api } from "../api";
 import { Disclaimer, ErrorNotice } from "../components/ui";
 import { money, pct } from "../format";
 import { useApi } from "../hooks";
+import Help from "../components/Help";
 
 interface Option {
   id: number;
@@ -108,7 +109,10 @@ export default function Comparator() {
     <>
       <div className="page-head">
         <div>
-          <h1>Comparador local</h1>
+          <div className="title-row">
+            <h1>Comparador local</h1>
+            <Help topic="comparador" />
+          </div>
           <div className="muted">CDP, bonos y fondos en Costa Rica con las tasas que ingresés (o la TBP del BCCR).</div>
         </div>
       </div>

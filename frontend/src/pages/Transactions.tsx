@@ -4,6 +4,8 @@ import { useSearchParams } from "react-router-dom";
 import { api, qs, type Category, type RuleSuggestion, type Transaction } from "../api";
 import { currentMonth, money, shortDate } from "../format";
 import { useApi } from "../hooks";
+import Help from "../components/Help";
+import PeriodPicker from "../components/PeriodPicker";
 
 const STATUS_LABEL = { uncategorized: "Sin categoría", suggested: "Sugerida", confirmed: "Confirmada" };
 const STATUS_CLASS = { uncategorized: "bad", suggested: "warn", confirmed: "ok" };
@@ -45,11 +47,23 @@ export default function Transactions() {
     <>
       <div className="page-head">
         <div>
-          <h1>Transacciones</h1>
+          <div className="title-row">
+            <h1>Transacciones</h1>
+            <Help topic="transacciones" />
+          </div>
           <div className="muted">{pending} pendientes de confirmar en la vista actual</div>
         </div>
         <div className="row">
-          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+          {month ? (
+            <>
+              <PeriodPicker value={month} onChange={setMonth} />
+              <button className="link small" onClick={() => setMonth("")}>
+                Ver todo
+              </button>
+            </>
+          ) : (
+            <button onClick={() => setMonth(currentMonth())}>Filtrar por mes</button>
+          )}
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="">Todas</option>
             <option value="suggested">Sugeridas</option>

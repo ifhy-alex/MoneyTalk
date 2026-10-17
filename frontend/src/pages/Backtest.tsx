@@ -4,6 +4,7 @@ import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, X
 import { api } from "../api";
 import { CHART, Disclaimer, ErrorNotice } from "../components/ui";
 import { num, pct } from "../format";
+import Help from "../components/Help";
 
 interface Period {
   start: string;
@@ -84,7 +85,10 @@ export default function Backtest() {
     <>
       <div className="page-head">
         <div>
-          <h1>Backtesting</h1>
+          <div className="title-row">
+            <h1>Backtesting</h1>
+            <Help topic="backtesting" />
+          </div>
           <div className="muted">
             Rebalanceo anual con estados financieros de la SEC disponibles en cada fecha (sin mirar el futuro).
           </div>

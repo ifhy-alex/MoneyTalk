@@ -2,6 +2,8 @@ import { useState } from "react";
 
 import { api, type IngestResult, type RawDocument } from "../api";
 import { useApi } from "../hooks";
+import GmailCard from "../components/GmailCard";
+import Help from "../components/Help";
 
 const STATUS_CLASS = { parsed: "ok", failed: "bad", ignored: "", pending: "warn" };
 
@@ -38,7 +40,10 @@ export default function Ingestion() {
     <>
       <div className="page-head">
         <div>
-          <h1>Ingesta</h1>
+          <div className="title-row">
+            <h1>Ingesta</h1>
+            <Help topic="ingesta" />
+          </div>
           <div className="muted">Correos de notificación (Gmail, solo lectura) y estados de cuenta en PDF.</div>
         </div>
       </div>
@@ -58,7 +63,11 @@ export default function Ingestion() {
 
       <div className="grid grid-2">
         <div className="card">
-          <h2>Estado de cuenta (PDF)</h2>
+          <h2>Subir PDF de movimientos o estado de cuenta</h2>
+          <p className="small muted">
+            Funciona con el «Reporte de Movimientos» del Banco Popular y el estado de tarjeta de BAC. También podés guardar
+            los PDF en la carpeta <code>data/inbox</code> y se importan solos.
+          </p>
           <div className="row end">
             <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             <label className="field">
@@ -70,24 +79,19 @@ export default function Ingestion() {
             </button>
           </div>
         </div>
-        <div className="card">
-          <h2>Gmail</h2>
-          <p className="small muted">
-            Lee la etiqueta configurada en <code>GMAIL_LABEL</code>. El worker también lo hace cada 30 minutos.
-          </p>
-          <div className="row">
-            <button className="primary" disabled={busy} onClick={() => run(() => api.post("/ingestion/gmail"))}>
-              Sincronizar ahora
-            </button>
-            <button disabled={busy} onClick={() => run(() => api.post("/ingestion/reprocess-outdated"))}>
-              Reprocesar fallidos/desactualizados
-            </button>
-          </div>
-        </div>
+        <GmailCard onResult={(r) => {
+          setResult(r);
+          docs.reload();
+        }} />
       </div>
 
       <div className="card table-wrap">
-        <h2>Documentos recibidos</h2>
+        <div className="card-head">
+          <h2>Documentos recibidos</h2>
+          <button disabled={busy} onClick={() => run(() => api.post("/ingestion/reprocess-outdated"))}>
+            Reprocesar fallidos o desactualizados
+          </button>
+        </div>
         <table>
           <thead>
             <tr>

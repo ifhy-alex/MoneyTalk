@@ -85,21 +85,29 @@ def test_statement_without_lines_fails(db: Session) -> None:
 class FakeMail:
     def __init__(self, messages: list[EmailMessage]) -> None:
         self.messages = messages
-        self.calls: list[tuple[str, date | None]] = []
+        self.queries: list[str] = []
 
-    def fetch(self, label: str, newer_than: date | None = None) -> Iterator[EmailMessage]:
-        self.calls.append((label, newer_than))
+    def fetch(self, query: str) -> Iterator[EmailMessage]:
+        self.queries.append(query)
         yield from self.messages
 
 
-def test_ingest_gmail_uses_label_and_overlap(db: Session) -> None:
+def test_ingest_gmail_filters_cr_banks_and_overlaps(db: Session) -> None:
     fake = FakeMail([email_fixture("bac_compra.html", BAC_SENDER)])
-    settings = Settings(gmail_label="Finanzas/Bancos")
+    settings = Settings(gmail_label="", gmail_extra_senders="mibanco.example")
     ingest_gmail(db, settings, source=fake)
     ingest_gmail(db, settings, source=fake)
-    assert fake.calls[0] == ("Finanzas/Bancos", None)
-    assert fake.calls[1][1] == date(2026, 10, 15)  # último correo (16/10) - 1 día
+    first, second = fake.queries
+    assert first.startswith("from:(") and "bncr.fi.cr" in first and "mibanco.example" in first
+    assert "after:" in first  # primera vez: últimos N días, no todo el historial
+    assert second.endswith("after:2026/10/15")  # último correo (16/10) - 1 día
     assert _count(db, Transaction) == 1
+
+
+def test_ingest_gmail_with_label() -> None:
+    from moneytalk.ingestion.gmail import build_query
+
+    assert build_query("Finanzas/Bancos", [], None) == "label:finanzas-bancos"
 
 
 def test_upload_pdf_endpoint(client: TestClient) -> None:

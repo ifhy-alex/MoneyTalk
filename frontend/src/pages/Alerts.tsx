@@ -4,6 +4,7 @@ import { api } from "../api";
 import { ErrorNotice } from "../components/ui";
 import { useApi } from "../hooks";
 import type { Alert, Preferences } from "../types-finance";
+import Help from "../components/Help";
 
 const KIND_LABEL: Record<string, string> = {
   unusual_spend: "Gasto inusual",
@@ -37,7 +38,10 @@ export default function Alerts() {
     <>
       <div className="page-head">
         <div>
-          <h1>Alertas y ajustes</h1>
+          <div className="title-row">
+            <h1>Alertas y ajustes</h1>
+            <Help topic="alertas" />
+          </div>
           <div className="muted">Cada alerta muestra la evidencia numérica que la disparó.</div>
         </div>
         <div className="row">
