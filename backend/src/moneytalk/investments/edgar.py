@@ -53,6 +53,7 @@ class FactValue:
     fiscal_year: int
     form: str
     accession: str
+    filed: date | None = None
 
     @property
     def citation(self) -> str:
@@ -71,18 +72,34 @@ class OfficialFundamentals:
     provenance: dict[str, str]
 
 
-def _annual_series(facts: dict[str, Any], concept_names: list[str]) -> dict[int, FactValue]:
-    """Valores anuales (10-K, periodo de ~12 meses), uno por año fiscal, el último reportado."""
-    gaap = facts.get("facts", {}).get("us-gaap", {})
+def _entries(facts: dict[str, Any], concept: str) -> list[dict[str, Any]]:
+    node = facts.get("facts", {}).get("us-gaap", {}).get(concept)
+    if not node:
+        return []
+    units = node.get("units", {})
+    entries: list[dict[str, Any]] = units.get("USD") or units.get("USD/shares") or []
+    return entries
+
+
+def _filed(e: dict[str, Any]) -> date | None:
+    return date.fromisoformat(e["filed"]) if e.get("filed") else None
+
+
+def _annual_series(
+    facts: dict[str, Any], concept_names: list[str], as_of: date | None = None
+) -> dict[int, FactValue]:
+    """Valores anuales (10-K, periodo de ~12 meses), uno por año fiscal.
+
+    Con `as_of`, solo usa lo *presentado* antes de esa fecha (point-in-time): evita el
+    sesgo de anticipación en backtests, incluidas reexpresiones posteriores.
+    """
     for concept in concept_names:
-        node = gaap.get(concept)
-        if not node:
-            continue
-        units = node.get("units", {})
-        entries = units.get("USD") or units.get("USD/shares") or []
         by_year: dict[int, FactValue] = {}
-        for e in entries:
+        for e in _entries(facts, concept):
             if e.get("form") not in {"10-K", "10-K/A", "20-F"} or e.get("fp") != "FY":
+                continue
+            filed = _filed(e)
+            if as_of and (filed is None or filed > as_of):
                 continue
             end = date.fromisoformat(e["end"])
             if "start" in e:
@@ -91,7 +108,7 @@ def _annual_series(facts: dict[str, Any], concept_names: list[str]) -> dict[int,
                     continue  # descartar trimestres incluidos en el 10-K
             # El año del periodo (no el "fy" del filing, que se repite en comparativos).
             year = end.year
-            fv = FactValue(concept, float(e["val"]), end, year, e["form"], e.get("accn", ""))
+            fv = FactValue(concept, float(e["val"]), end, year, e["form"], e.get("accn", ""), filed)
             if year not in by_year or fv.accession >= by_year[year].accession:
                 by_year[year] = fv
         if by_year:
@@ -99,8 +116,30 @@ def _annual_series(facts: dict[str, Any], concept_names: list[str]) -> dict[int,
     return {}
 
 
-def compute_official(symbol: str, cik: int, facts: dict[str, Any]) -> OfficialFundamentals:
-    series = {k: _annual_series(facts, v) for k, v in CONCEPTS.items()}
+def quarterly_series(facts: dict[str, Any], concept_names: list[str]) -> dict[date, FactValue]:
+    """Valores de 10-Q: flujos de ~3 meses o saldos al cierre del trimestre."""
+    for concept in concept_names:
+        by_end: dict[date, FactValue] = {}
+        for e in _entries(facts, concept):
+            if e.get("form") not in {"10-Q", "10-Q/A"}:
+                continue
+            end = date.fromisoformat(e["end"])
+            if "start" in e and not 80 <= (end - date.fromisoformat(e["start"])).days <= 100:
+                continue  # descartar acumulados de 6 y 9 meses
+            fv = FactValue(
+                concept, float(e["val"]), end, end.year, e["form"], e.get("accn", ""), _filed(e)
+            )
+            if end not in by_end or fv.accession >= by_end[end].accession:
+                by_end[end] = fv
+        if by_end:
+            return by_end
+    return {}
+
+
+def compute_official(
+    symbol: str, cik: int, facts: dict[str, Any], as_of: date | None = None
+) -> OfficialFundamentals:
+    series = {k: _annual_series(facts, v, as_of) for k, v in CONCEPTS.items()}
     years = sorted(series["revenue"] or series["net_income"])
     if not years:
         raise ProviderError(f"EDGAR: {symbol} no tiene datos anuales en us-gaap")
@@ -126,8 +165,10 @@ def compute_official(symbol: str, cik: int, facts: dict[str, Any]) -> OfficialFu
         "gross_margin": gross / revenue if gross is not None and revenue else None,
         "operating_margin": operating / revenue if operating is not None and revenue else None,
         "net_margin": net_income / revenue if net_income is not None and revenue else None,
+        "eps_diluted": v("eps_diluted"),
     }
     deps = {
+        "eps_diluted": ["eps_diluted"],
         "roe": ["net_income", "equity"],
         "debt_to_equity": ["long_term_debt", "short_term_debt", "equity"],
         "free_cash_flow": ["operating_cash_flow", "capex"],

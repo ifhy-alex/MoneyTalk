@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from moneytalk.api import (
     accounts,
+    analysis,
     categories,
     finance,
     health,
@@ -11,5 +12,14 @@ from moneytalk.api import (
 )
 
 router = APIRouter()
-for module in (health, accounts, ingestion, transactions, categories, finance, investments):
+for module in (
+    health,
+    accounts,
+    ingestion,
+    transactions,
+    categories,
+    finance,
+    investments,
+    analysis,
+):
     router.include_router(module.router)

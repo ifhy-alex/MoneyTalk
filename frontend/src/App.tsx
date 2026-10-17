@@ -1,11 +1,14 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 
 import Alerts from "./pages/Alerts";
+import Backtest from "./pages/Backtest";
 import Budget from "./pages/Budget";
+import Comparator from "./pages/Comparator";
 import Dashboard from "./pages/Dashboard";
 import Goals from "./pages/Goals";
 import Ingestion from "./pages/Ingestion";
 import Portfolio from "./pages/Portfolio";
+import Reports from "./pages/Reports";
 import Rules from "./pages/Rules";
 import Screener from "./pages/Screener";
 import Transactions from "./pages/Transactions";
@@ -26,6 +29,9 @@ const NAV: { group: string; items: { to: string; label: string }[] }[] = [
     items: [
       { to: "/portafolio", label: "Portafolio" },
       { to: "/screener", label: "Screener" },
+      { to: "/reportes", label: "Reportes trimestrales" },
+      { to: "/comparador", label: "Comparador local" },
+      { to: "/backtesting", label: "Backtesting" },
     ],
   },
   {
@@ -63,6 +69,9 @@ export default function App() {
           <Route path="/alertas" element={<Alerts />} />
           <Route path="/portafolio" element={<Portfolio />} />
           <Route path="/screener" element={<Screener />} />
+          <Route path="/reportes" element={<Reports />} />
+          <Route path="/comparador" element={<Comparator />} />
+          <Route path="/backtesting" element={<Backtest />} />
           <Route path="/reglas" element={<Rules />} />
           <Route path="/ingesta" element={<Ingestion />} />
         </Routes>

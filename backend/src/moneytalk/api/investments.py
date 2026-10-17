@@ -52,7 +52,7 @@ def provider_dep(db: DB) -> CachedProvider:
 Provider = Annotated[CachedProvider, Depends(provider_dep)]
 
 
-def _edgar(db: Session) -> EdgarClient | None:
+def edgar_client(db: Session) -> EdgarClient | None:
     try:
         return EdgarClient(db, get_settings().sec_user_agent)
     except ProviderError:
@@ -76,7 +76,7 @@ def get_fundamentals(db: DB, provider: Provider, symbol: str) -> dict[str, Any]:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     official: OfficialFundamentals | None = None
     edgar_error = None
-    if client := _edgar(db):
+    if client := edgar_client(db):
         try:
             official = client.official(symbol)
         except ProviderError as exc:
@@ -144,7 +144,7 @@ def delete_preset(db: DB, preset_id: int) -> None:
 
 @router.post("/screener/run")
 def run_screener(db: DB, provider: Provider, body: ScreenerRequest) -> dict[str, Any]:
-    edgar = _edgar(db) if body.use_sec else None
+    edgar = edgar_client(db) if body.use_sec else None
     rows: list[dict[str, Any]] = []
     for raw in body.universe:
         symbol = raw.upper().strip()
