@@ -65,6 +65,23 @@ def extract_body(payload: dict[str, Any]) -> str:
     return "\n".join(plain)
 
 
+def pdf_attachment_refs(payload: dict[str, Any]) -> list[tuple[str, str]]:
+    """(nombre, attachmentId) de cada adjunto PDF del mensaje."""
+    refs: list[tuple[str, str]] = []
+
+    def walk(part: dict[str, Any]) -> None:
+        name = part.get("filename") or ""
+        att_id = part.get("body", {}).get("attachmentId")
+        is_pdf = part.get("mimeType") == "application/pdf" or name.lower().endswith(".pdf")
+        if att_id and is_pdf:
+            refs.append((name or "adjunto.pdf", att_id))
+        for sub in part.get("parts", []) or []:
+            walk(sub)
+
+    walk(payload)
+    return refs
+
+
 class GmailSource:
     def __init__(self, token_file: Path) -> None:
         from google.auth.transport.requests import Request
@@ -86,6 +103,16 @@ class GmailSource:
                 return str(label["id"])
         raise RuntimeError(f"No existe la etiqueta de Gmail {name!r}")
 
+    def _attachment(self, message_id: str, attachment_id: str) -> bytes:
+        att = (
+            self._service.users()
+            .messages()
+            .attachments()
+            .get(userId="me", messageId=message_id, id=attachment_id)
+            .execute()
+        )
+        return base64.urlsafe_b64decode(att["data"].encode("ascii"))
+
     def fetch(self, label: str, newer_than: date | None = None) -> Iterator[EmailMessage]:
         label_id = self._label_id(label)
         query = f"after:{newer_than:%Y/%m/%d}" if newer_than else None
@@ -105,12 +132,17 @@ class GmailSource:
                     .execute()
                 )
                 headers = {h["name"].lower(): h["value"] for h in msg["payload"].get("headers", [])}
+                attachments = tuple(
+                    (name, self._attachment(msg["id"], att_id))
+                    for name, att_id in pdf_attachment_refs(msg["payload"])
+                )
                 yield EmailMessage(
                     message_id=msg["id"],
                     sender=headers.get("from", ""),
                     subject=headers.get("subject", ""),
                     received_at=datetime.fromtimestamp(int(msg["internalDate"]) / 1000, tz=UTC),
                     body_text=extract_body(msg["payload"]),
+                    pdf_attachments=attachments,
                 )
             page_token = resp.get("nextPageToken")
             if not page_token:

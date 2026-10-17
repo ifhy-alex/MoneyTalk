@@ -21,6 +21,7 @@ _DIGITS = re.compile(r"\b\d{3,}\b")
 def normalize_merchant(raw: str) -> str:
     s = strip_accents(raw).upper().strip()
     s = _PAYMENT_PREFIXES.sub("", s)
+    s = re.sub(r"^G\s?GLE\b", "GOOGLE", s)  # "G gle" = Google en algunos bancos
     s = s.replace(".COM", "").replace("*", " ")
     s = _NOISE.sub(" ", s)
     s = _DIGITS.sub(" ", s)

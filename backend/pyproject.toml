@@ -86,5 +86,5 @@ addopts = "-q"
 
 [[tool.mypy.overrides]]
 # PyMuPDF y google-auth no publican tipos completos.
-module = ["moneytalk.ingestion.pdf", "moneytalk.ingestion.gmail", "tests.helpers"]
+module = ["moneytalk.ingestion.pdf", "moneytalk.ingestion.gmail", "tests.helpers", "tests.test_auto_ingest"]
 disallow_untyped_calls = false

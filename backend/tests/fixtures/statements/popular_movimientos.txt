@@ -1,0 +1,30 @@
+10/16/26, 8:58 PM
+                                         Reporte de Movimientos
+
+    Titular:                           PERSONA DE EJEMPLO FICTICIA                    Cuenta IBAN:                CR05016100012345678901
+
+    Cuenta:                                     00012345678901                                  Tipo Cuenta:                  Ahorro Voluntario Pers. Física
+
+    Saldo Actual:                                   ₡91,430.85
+   Fecha Inicial:                                   17/09/2026
+                                                                                       Moneda:                           CRC
+   Fecha Final:                                    16/10/2026
+
+     Fecha y Hora                    Descripción                                                          Documento                        Débito               Créditos             Saldo
+
+                                       Saldo Inicial                                                                                          ₡0.00               ₡0.00                ₡100,000.00
+
+      18/09/2026 02:28 PM         CARGOS Y COMISIONES:99999999:000000000111222:FS SUPERCFS SUPERCELLSTORE fsprg nl          FT26261AAAAA\BNK               ₡10.15              ₡0.00                ₡99,989.85
+
+      18/09/2026 02:28 PM           Compra en Comercio:99999999:000000000111222:FS SUPERCFS SUPERCELLSTORE fsprg nl          FT26261AAAAA\BNK               ₡676.46             ₡0.00                ₡99,313.39
+
+      18/09/2026 02:30 PM           Compra en Comercio:INET0001:12345678:SODA EJEMPLO SAN JOSE CRSODA EJEMPLO SAN JOSE          FT26261BBBBB\BNK              ₡5,250.00          ₡0.00                ₡94,063.39
+
+      20/09/2026 05:53 PM          CREDITO SINPE MOVIL                                                                       FT26263CCCCC\BNK               ₡0.00                ₡15,000.00           ₡109,063.39
+
+      27/09/2026 06:06 PM           Compra en Comercio:99999999:000000000333444:G gle CasG gle Castle Busters 650 253000      FT26270DDDDD\BNK               ₡500.00             ₡0.00                ₡108,563.39
+
+      30/09/2026 12:55 AM         Interes Credito                                                                           11112222-33334444              ₡0.00                ₡49.15               ₡108,612.54
+
+      06/10/2026 07:17 PM         SINPE MOVIL INTERNOSM SAL 2026100616183221573562713De 88887777 a 86665555DESCRIPCION comida          FT26279EEEEE\BNK               ₡17,181.69          ₡0.00                ₡91,430.85
+                                       Saldo Final                                                                                            ₡0.00               ₡0.00                ₡91,430.85

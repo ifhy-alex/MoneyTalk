@@ -5,6 +5,7 @@ Celery no se justifica: un solo usuario, pocas tareas, sin colas distribuidas.
 
 import logging
 from collections.abc import Callable
+from datetime import UTC, datetime
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -14,7 +15,13 @@ from sqlalchemy.orm import Session
 from moneytalk.config import Settings, get_settings
 from moneytalk.db import get_sessionmaker
 from moneytalk.investments.jobs import job_refresh_quotes
-from moneytalk.jobs import job_alerts, job_fx_sync, job_ingest_and_alert, job_weekly_summary
+from moneytalk.jobs import (
+    job_alerts,
+    job_fx_sync,
+    job_inbox,
+    job_ingest_and_alert,
+    job_weekly_summary,
+)
 from moneytalk.log import configure_logging
 
 log = logging.getLogger("moneytalk.scheduler")
@@ -44,10 +51,25 @@ def build_scheduler() -> BlockingScheduler:
         max_instances=1,
         coalesce=True,
     )
-    if settings.bccr_token:
-        sched.add_job(
-            _run("tipo de cambio", job_fx_sync), CronTrigger(hour=8, minute=5, timezone=tz), id="fx"
-        )
+    sched.add_job(
+        _run("carpeta de entrada", job_inbox),
+        IntervalTrigger(minutes=2),
+        id="inbox",
+        max_instances=1,
+        coalesce=True,
+    )
+    # BCCR publica una vez al día; el respaldo de mercado se refresca cada hora.
+    fx_trigger = (
+        CronTrigger(hour=8, minute=5, timezone=tz)
+        if settings.bccr_token
+        else IntervalTrigger(hours=1)
+    )
+    sched.add_job(
+        _run("tipo de cambio", job_fx_sync),
+        fx_trigger,
+        id="fx",
+        next_run_time=datetime.now(UTC),  # también al arrancar
+    )
     sched.add_job(
         _run("alertas presupuesto", job_alerts),
         CronTrigger(hour=19, minute=0, timezone=tz),

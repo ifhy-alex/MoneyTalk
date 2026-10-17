@@ -2,9 +2,10 @@
 
 import hashlib
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
+from pathlib import Path
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
@@ -19,6 +20,7 @@ from moneytalk.ingestion.parsers import (
 )
 from moneytalk.ingestion.parsers.base import EmailParser, StatementParser
 from moneytalk.ingestion.pdf import pdf_to_text, sha256_bytes
+from moneytalk.ingestion.privacy import redact_document
 from moneytalk.ingestion.types import EmailMessage, ParsedTransaction
 from moneytalk.models import (
     Account,
@@ -67,7 +69,8 @@ def store_raw(
     subject: str | None = None,
     received_at: datetime | None = None,
 ) -> RawDocument | None:
-    """Guarda el documento crudo. Devuelve None si ya existía (por id externo o contenido)."""
+    """Guarda el documento crudo ya enmascarado. Devuelve None si ya existía."""
+    content_text = redact_document(content_text)
     content_hash = _hash(content_text)
     exists = db.scalar(
         select(func.count())
@@ -204,12 +207,54 @@ def ingest_email(
 
 
 def ingest_emails(
-    db: Session, messages: Iterable[EmailMessage], on_new: NewTransactionHook | None = None
+    db: Session,
+    messages: Iterable[EmailMessage],
+    on_new: NewTransactionHook | None = None,
+    passwords: Sequence[str] = (),
 ) -> IngestResult:
     total = IngestResult()
     for message in messages:
         total.add(ingest_email(db, message, on_new))
         db.commit()
+        for name, data in message.pdf_attachments:
+            total.add(ingest_pdf_safe(db, data, name, passwords, on_new))
+    return total
+
+
+def ingest_pdf_safe(
+    db: Session,
+    data: bytes,
+    filename: str,
+    passwords: Sequence[str] = (),
+    on_new: NewTransactionHook | None = None,
+) -> IngestResult:
+    """Como `ingest_pdf`, probando contraseñas y sin lanzar: el error queda en el resultado."""
+    last_error = ""
+    for password in [None, *passwords]:
+        try:
+            return ingest_pdf(db, data, filename, password=password, on_new=on_new)
+        except ValueError as exc:
+            last_error = str(exc)
+    return IngestResult(documents_failed=1, errors=[f"{filename}: {last_error}"])
+
+
+def ingest_inbox(
+    db: Session,
+    inbox: Path,
+    passwords: Sequence[str] = (),
+    on_new: NewTransactionHook | None = None,
+) -> IngestResult:
+    """Importa los PDF dejados en la carpeta de entrada y los mueve a procesados/ o errores/."""
+    total = IngestResult()
+    if not inbox.is_dir():
+        return total
+    for pdf in sorted(inbox.glob("*.pdf")):
+        result = ingest_pdf_safe(db, pdf.read_bytes(), pdf.name, passwords, on_new)
+        total.add(result)
+        target = inbox / ("errores" if result.documents_failed else "procesados")
+        target.mkdir(exist_ok=True)
+        stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+        pdf.replace(target / f"{stamp}_{pdf.name}")
     return total
 
 

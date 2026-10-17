@@ -33,6 +33,8 @@ IND_BUY, IND_SELL = "317", "318"
 
 
 class FxSource(Protocol):
+    label: str
+
     def series(self, indicator: str, start: date, end: date) -> dict[date, Decimal]: ...
 
 
@@ -53,6 +55,8 @@ def parse_bccr_xml(payload: str) -> dict[date, Decimal]:
 
 
 class BccrClient:
+    label = "BCCR"
+
     def __init__(self, settings: Settings, http: httpx.Client | None = None) -> None:
         if not settings.bccr_email or not settings.bccr_token:
             raise RuntimeError("Configurá BCCR_EMAIL y BCCR_TOKEN en .env")
@@ -77,11 +81,45 @@ class BccrClient:
         return parse_bccr_xml(resp.text)
 
 
+class YahooFxSource:
+    """Respaldo sin token: tipo de cambio de mercado USD/CRC de Yahoo (símbolo CRC=X).
+
+    No es el tipo de referencia oficial del BCCR ni distingue compra/venta (se usa el
+    cierre para ambos). Sirve para tener un valor actual mientras no hay token.
+    """
+
+    label = "Yahoo (mercado)"
+
+    def __init__(self) -> None:
+        self._cache: dict[tuple[date, date], dict[date, Decimal]] = {}
+
+    def series(self, indicator: str, start: date, end: date) -> dict[date, Decimal]:
+        key = (start, end)
+        if key not in self._cache:
+            import yfinance as yf
+
+            df = yf.Ticker("CRC=X").history(
+                start=start.isoformat(), end=(end + timedelta(days=1)).isoformat()
+            )
+            if df is None or df.empty:
+                raise RuntimeError("Yahoo no devolvió el tipo de cambio CRC=X")
+            self._cache[key] = {
+                idx.date(): Decimal(str(round(float(v), 4))) for idx, v in df["Close"].items()
+            }
+        return self._cache[key]
+
+
+def default_source(settings: Settings) -> FxSource:
+    if settings.bccr_email and settings.bccr_token:
+        return BccrClient(settings)
+    return YahooFxSource()
+
+
 def sync_rates(db: Session, source: FxSource, start: date, end: date) -> int:
     buy = source.series(IND_BUY, start, end)
     sell = source.series(IND_SELL, start, end)
     rows = [
-        {"rate_date": d, "buy": buy[d], "sell": sell[d], "source": "BCCR"}
+        {"rate_date": d, "buy": buy[d], "sell": sell[d], "source": source.label}
         for d in sorted(buy.keys() & sell.keys())
     ]
     if rows:
@@ -89,7 +127,13 @@ def sync_rates(db: Session, source: FxSource, start: date, end: date) -> int:
         db.execute(
             stmt.on_conflict_do_update(
                 index_elements=[ExchangeRate.rate_date],
-                set_={"buy": stmt.excluded.buy, "sell": stmt.excluded.sell},
+                set_={
+                    "buy": stmt.excluded.buy,
+                    "sell": stmt.excluded.sell,
+                    "source": stmt.excluded.source,
+                },
+                # Un dato de mercado nunca reemplaza al oficial del BCCR.
+                where=(ExchangeRate.source != "BCCR") | (stmt.excluded.source == "BCCR"),
             )
         )
         db.commit()

@@ -9,12 +9,18 @@ from sqlalchemy.orm import Session
 
 from moneytalk.config import Settings
 from moneytalk.finance.alerts import run_alerts
-from moneytalk.finance.fx import BccrClient, FxConverter, FxSource, default_sync_window, sync_rates
+from moneytalk.finance.fx import (
+    FxConverter,
+    FxSource,
+    default_source,
+    default_sync_window,
+    sync_rates,
+)
 from moneytalk.finance.prefs import get_prefs
 from moneytalk.finance.summary import weekly_summary
 from moneytalk.models import Alert
 from moneytalk.notifications.telegram import TelegramNotifier, esc
-from moneytalk.pipeline import ingest_gmail
+from moneytalk.pipeline import ingest_gmail, ingest_inbox
 
 log = logging.getLogger(__name__)
 
@@ -25,8 +31,9 @@ def today_cr(settings: Settings) -> date:
 
 def job_fx_sync(db: Session, settings: Settings, source: FxSource | None = None) -> int:
     start, end = default_sync_window(db, today_cr(settings))
-    n = sync_rates(db, source or BccrClient(settings), start, end)
-    log.info("Tipo de cambio: %s días actualizados", n)
+    src = source or default_source(settings)
+    n = sync_rates(db, src, start, end)
+    log.info("Tipo de cambio (%s): %s días actualizados", src.label, n)
     return n
 
 
@@ -43,6 +50,18 @@ def job_alerts(
                 alert.notified_at = datetime.now(UTC)
         db.commit()
     return created
+
+
+def job_inbox(db: Session, settings: Settings) -> None:
+    result = ingest_inbox(db, settings)
+    if result.documents_new or result.documents_failed:
+        log.info(
+            "Carpeta de entrada: %s PDF nuevos, %s transacciones, %s errores",
+            result.documents_new,
+            result.transactions_created,
+            result.documents_failed,
+        )
+        job_alerts(db, settings)
 
 
 def job_ingest_and_alert(db: Session, settings: Settings) -> None:

@@ -3,10 +3,11 @@
 from moneytalk.ingestion.parsers.bac import BacEmailParser, BacStatementParser
 from moneytalk.ingestion.parsers.base import EmailParser, ParseError, StatementParser
 from moneytalk.ingestion.parsers.bn import BnEmailParser
+from moneytalk.ingestion.parsers.popular import PopularStatementParser
 from moneytalk.ingestion.types import EmailMessage
 
 EMAIL_PARSERS: list[EmailParser] = [BacEmailParser(), BnEmailParser()]
-STATEMENT_PARSERS: list[StatementParser] = [BacStatementParser()]
+STATEMENT_PARSERS: list[StatementParser] = [BacStatementParser(), PopularStatementParser()]
 
 
 def find_email_parser(message: EmailMessage) -> EmailParser | None:

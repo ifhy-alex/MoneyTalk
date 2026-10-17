@@ -8,6 +8,7 @@ from moneytalk.api import (
     health,
     ingestion,
     investments,
+    market,
     transactions,
 )
 
@@ -20,6 +21,7 @@ for module in (
     categories,
     finance,
     investments,
+    market,
     analysis,
 ):
     router.include_router(module.router)

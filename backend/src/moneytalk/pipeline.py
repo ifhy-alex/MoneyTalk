@@ -41,5 +41,18 @@ def ingest_gmail(
         newer_than = (last.date() - timedelta(days=1)) if last else None
     mail = source or GmailSource(settings.gmail_token_file)
     return service.ingest_emails(
-        db, mail.fetch(settings.gmail_label, newer_than), on_new=on_new_transaction
+        db,
+        mail.fetch(settings.gmail_label, newer_than),
+        on_new=on_new_transaction,
+        passwords=pdf_passwords(settings),
+    )
+
+
+def pdf_passwords(settings: Settings) -> list[str]:
+    return [p.strip() for p in settings.statement_pdf_passwords.split(",") if p.strip()]
+
+
+def ingest_inbox(db: Session, settings: Settings) -> service.IngestResult:
+    return service.ingest_inbox(
+        db, settings.inbox_dir, pdf_passwords(settings), on_new=on_new_transaction
     )

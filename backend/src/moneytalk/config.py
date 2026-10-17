@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     gmail_credentials_file: Path = Path("data/gmail_credentials.json")
     gmail_token_file: Path = Path("data/gmail_token.json")
     gmail_label: str = "Finanzas/Bancos"
+    # Carpeta vigilada: cualquier PDF que dejés aquí se importa solo.
+    inbox_dir: Path = Path("data/inbox")
+    # Contraseñas de PDFs protegidos (separadas por coma). Opcional; solo en .env.
+    statement_pdf_passwords: str = ""
 
     anthropic_api_key: str = ""
     claude_model: str = "claude-opus-5-5"

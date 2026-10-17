@@ -15,6 +15,8 @@ class EmailMessage:
     subject: str
     received_at: datetime | None
     body_text: str
+    # Adjuntos PDF (nombre, bytes): estados de cuenta que algunos bancos envían por correo.
+    pdf_attachments: tuple[tuple[str, bytes], ...] = ()
 
 
 @dataclass(frozen=True)
