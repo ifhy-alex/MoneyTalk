@@ -66,11 +66,11 @@ export default function Goals() {
       </div>
       <ErrorNotice error={error} />
 
-      {!hasEmergency && ef.data && (
+      {!hasEmergency && (goals.data?.length ?? 0) > 0 && ef.data && (
         <div className="notice warn row">
           <span>
-            Sugerencia de fondo de emergencia: <b>{money(ef.data.suggested_target, ef.data.currency)}</b> (
-            {ef.data.months} meses; {ef.data.based_on}).
+            Sugerencia de fondo de emergencia: <b>{money(ef.data.suggested_target, ef.data.currency)}</b>, {ef.data.months}{" "}
+            meses de tu {ef.data.based_on}.
           </span>
           <span className="spacer" />
           <button
@@ -134,6 +134,39 @@ export default function Goals() {
           </button>
         </div>
       </div>
+
+      {goals.data?.length === 0 && (
+        <div className="card empty-block">
+          <h2>Todavía no tenés metas</h2>
+          <p>
+            Empezá por el fondo de emergencia: plata líquida para imprevistos (perder el trabajo, una emergencia médica).
+            Mientras no esté completo, MoneyTalk no muestra dinero disponible para invertir.
+          </p>
+          {ef.data && Number(ef.data.suggested_target) > 0 && (
+            <div className="row">
+              <button
+                className="primary"
+                onClick={() =>
+                  run(() =>
+                    api.post("/goals", {
+                      name: "Fondo de emergencia",
+                      target_amount: String(Math.round(Number(ef.data!.suggested_target))),
+                      currency: "CRC",
+                      is_emergency_fund: true,
+                      priority: 1000,
+                    }),
+                  )
+                }
+              >
+                Crear fondo de {money(Math.round(Number(ef.data.suggested_target)), "CRC")}
+              </button>
+              <span className="muted small">
+                {ef.data.months} meses de tu gasto promedio. Podés cambiar el monto después.
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-2">
         {goals.data?.map((g) => (

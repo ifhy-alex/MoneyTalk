@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { api } from "../api";
 import { ErrorNotice } from "../components/ui";
+import { money } from "../format";
 import { useApi } from "../hooks";
 import type { Alert, Preferences } from "../types-finance";
 import Help from "../components/Help";
@@ -13,6 +14,34 @@ const KIND_LABEL: Record<string, string> = {
   new_subscription: "Suscripción nueva",
   duplicate_subscription: "Suscripción duplicada",
 };
+
+// La evidencia llega con claves internas; aquí se nombra y se formatea para leerla.
+const EVIDENCE_LABEL: Record<string, string> = {
+  monto_crc: "Monto",
+  media_categoria: "Media de la categoría",
+  mediana_comercio: "Mediana del comercio",
+  desviacion: "Desviación",
+  umbral: "Umbral",
+  muestras: "Muestras",
+  presupuesto: "Presupuesto",
+  gastado: "Gastado",
+  porcentaje: "Usado",
+  moneda: "Moneda",
+  sin_cargos_previos_dias: "Sin cargos previos",
+  meses: "Meses",
+  transacciones: "Movimientos",
+  montos: "Montos",
+};
+const MONEY_KEYS = new Set(["monto_crc", "media_categoria", "mediana_comercio", "desviacion", "umbral"]);
+
+function fmtEvidence(key: string, v: unknown): string {
+  if (Array.isArray(v)) return v.join(", ");
+  if (MONEY_KEYS.has(key) && typeof v === "number") return money(v, "CRC");
+  if (key === "porcentaje") return `${Number(v).toLocaleString("es-CR")} %`;
+  if (key === "sin_cargos_previos_dias") return `${String(v)} días`;
+  if ((key === "presupuesto" || key === "gastado") && !Number.isNaN(Number(v))) return Number(v).toLocaleString("es-CR");
+  return String(v);
+}
 
 export default function Alerts() {
   const alerts = useApi<Alert[]>("/alerts");
@@ -93,9 +122,14 @@ export default function Alerts() {
                 </td>
                 <td>{a.message}</td>
                 <td className="small muted">
-                  {Object.entries(a.evidence)
-                    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`)
-                    .join(" · ")}
+                  <dl className="evidence">
+                    {Object.entries(a.evidence).map(([k, v]) => (
+                      <div key={k}>
+                        <dt>{EVIDENCE_LABEL[k] ?? k.replace(/_/g, " ")}</dt>
+                        <dd>{fmtEvidence(k, v)}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 </td>
                 <td>
                   {!a.read_at && (

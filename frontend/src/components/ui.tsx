@@ -36,9 +36,9 @@ function asFigure(value: ReactNode): ReactNode {
   return value;
 }
 
-export function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
+export function Stat({ label, value, hint, lead = false }: { label: string; value: ReactNode; hint?: ReactNode; lead?: boolean }) {
   return (
-    <div className="card stat">
+    <div className={lead ? "card stat lead" : "card stat"}>
       <div className="label">{label}</div>
       <div className="value">{asFigure(value)}</div>
       {hint && <div className="muted small hint">{hint}</div>}
@@ -62,7 +62,6 @@ export function ErrorNotice({ error }: { error?: string }) {
 export function Disclaimer() {
   return (
     <div className="disclaimer">
-      <span aria-hidden>⚖</span>
       <span>
         <b>No es asesoría financiera.</b> Las señales se calculan con criterios que vos definís y se muestran con su
         evidencia. Los datos de mercado pueden tener retrasos o errores; verificá con fuentes oficiales antes de decidir.

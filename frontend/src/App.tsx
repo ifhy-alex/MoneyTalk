@@ -58,6 +58,9 @@ const NAV: { group: string; items: NavItem[] }[] = [
 export default function App() {
   return (
     <div className="layout">
+      <a className="skip-link" href="#contenido">
+        Saltar al contenido
+      </a>
       <nav className="sidebar" aria-label="Navegación principal">
         <div className="brand">
           <div className="brand-mark" aria-hidden>
@@ -83,7 +86,7 @@ export default function App() {
       </nav>
       <div className="content">
         <Ticker />
-        <main>
+        <main id="contenido" tabIndex={-1}>
           <Routes>
             <Route path="/" element={<Navigate to="/resumen" replace />} />
             {NAV.flatMap((g) => g.items).map((i) => (

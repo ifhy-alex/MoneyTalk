@@ -72,7 +72,7 @@ function AllocationPie({ title, data }: { title: string; data: Record<string, nu
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <PieChart>
-            <Pie data={items} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
+            <Pie isAnimationActive={false} data={items} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
               {items.map((_, i) => (
                 <Cell key={i} fill={CHART.palette[i % CHART.palette.length]} />
               ))}
@@ -192,9 +192,9 @@ export default function Portfolio() {
               <YAxis tickFormatter={(v: number) => `$${num(v, 0)}`} width={70} />
               <Tooltip formatter={(v) => money(Number(v), "USD")} />
               <Legend />
-              <Line dataKey="Portafolio" stroke={CHART.accent} dot={false} strokeWidth={2} />
-              <Line dataKey={bench.data!.benchmark} stroke={CHART.accent2} dot={false} strokeWidth={2} />
-              <Line dataKey="Invertido" stroke={CHART.grid} dot={false} strokeDasharray="4 4" />
+              <Line isAnimationActive={false} dataKey="Portafolio" stroke={CHART.accent} dot={false} strokeWidth={2} />
+              <Line isAnimationActive={false} dataKey={bench.data!.benchmark} stroke={CHART.accent2} dot={false} strokeWidth={2} />
+              <Line isAnimationActive={false} dataKey="Invertido" stroke={CHART.grid} dot={false} strokeDasharray="4 4" />
             </LineChart>
           </ResponsiveContainer>
         </div>

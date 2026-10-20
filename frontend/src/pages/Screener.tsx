@@ -5,6 +5,7 @@ import { Disclaimer, ErrorNotice } from "../components/ui";
 import { num, pct } from "../format";
 import { useApi } from "../hooks";
 import Help from "../components/Help";
+import { Icons } from "../components/icons";
 
 type Op = ">=" | "<=" | ">" | "<" | "between";
 interface Criterion {
@@ -239,7 +240,13 @@ export default function Screener() {
                             {r.results.map((x) => (
                               <tr key={x.metric}>
                                 <td style={{ width: 24 }}>
-                                  {x.passed === true ? <span className="check">✓</span> : x.passed === false ? <span className="cross">✗</span> : "?"}
+                                  {x.passed === true ? (
+                                    <span className="check" aria-label="Cumple">{Icons.check}</span>
+                                  ) : x.passed === false ? (
+                                    <span className="cross" aria-label="No cumple">{Icons.cross}</span>
+                                  ) : (
+                                    <span className="muted" aria-label="Sin dato">?</span>
+                                  )}
                                 </td>
                                 <td>{x.description}</td>
                                 <td className="num">{fmt(x.actual, m[x.metric]?.format)}</td>

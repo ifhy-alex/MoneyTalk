@@ -4,7 +4,7 @@ import { api, type Category } from "../api";
 import { ErrorNotice, Progress } from "../components/ui";
 import { currentMonth, money, pct } from "../format";
 import { useApi } from "../hooks";
-import type { BudgetStatus } from "../types-finance";
+import type { BudgetStatus, Dashboard } from "../types-finance";
 import Help from "../components/Help";
 import PeriodPicker from "../components/PeriodPicker";
 
@@ -37,6 +37,23 @@ export default function Budget() {
   }
 
   const expenseCats = cats.data?.filter((c) => c.kind === "expense") ?? [];
+  // Referencia para empezar: tu gasto mensual promedio por categoría en lo que va del año.
+  const year = useApi<Dashboard>(budgets.data && budgets.data.length === 0 ? `/dashboard?period=${month.slice(0, 4)}` : null);
+  const monthsWithData = Math.max(1, year.data?.trend.filter((t) => Number(t.expenses) > 0).length ?? 1);
+  const suggestions = Object.entries(year.data?.by_category ?? {})
+    .map(([name, total]) => ({ cat: expenseCats.find((c) => c.name === name), avg: Math.round(Number(total) / monthsWithData / 1000) * 1000 }))
+    .filter((s): s is { cat: Category; avg: number } => Boolean(s.cat) && s.avg > 0)
+    .slice(0, 6);
+
+  async function applySuggestion(categoryId: number, amount: number) {
+    setError(undefined);
+    try {
+      await api.post("/budgets", { category_id: categoryId, amount: String(amount), currency: "CRC", month: null });
+      budgets.reload();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
 
   return (
     <>
@@ -131,9 +148,52 @@ export default function Budget() {
                 </td>
               </tr>
             ))}
+            {budgets.data?.length === 0 && (
+              <tr>
+                <td colSpan={6} className="empty-row">
+                  Todavía no tenés presupuestos para {month}. Empezá con tu gasto real: abajo está tu promedio mensual por
+                  categoría.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      {budgets.data?.length === 0 && (
+        <div className="card table-wrap">
+          <div className="card-head">
+            <h2>Tu gasto promedio por categoría</h2>
+            <span className="muted small">
+              {month.slice(0, 4)} · {monthsWithData} {monthsWithData === 1 ? "mes" : "meses"} con datos
+            </span>
+          </div>
+          {suggestions.length === 0 ? (
+            <p className="muted">Todavía no hay gastos categorizados. Confirmá categorías en Transacciones y aquí aparecerán.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Categoría</th>
+                  <th className="num">Promedio mensual</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {suggestions.map((s) => (
+                  <tr key={s.cat.id}>
+                    <td>{s.cat.name}</td>
+                    <td className="num">{money(s.avg, "CRC")}</td>
+                    <td className="num">
+                      <button onClick={() => applySuggestion(s.cat.id, s.avg)}>Usar como presupuesto</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </>
   );
 }

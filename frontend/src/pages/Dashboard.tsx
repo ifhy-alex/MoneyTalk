@@ -71,17 +71,28 @@ export default function Dashboard() {
     ? Object.entries(data.expenses_by_currency).map(([c, v]) => ({ name: c, value: c === "USD" ? Number(v) * Number(data.fx?.sell ?? 0) : Number(v) }))
     : [];
   const income = Number(data?.income ?? 0);
+  const net = Number(data?.net ?? 0);
+  const top = categories[0];
+  const expenses = Number(data?.expenses ?? 0);
+  // El hallazgo del periodo: lo primero que se lee bajo el título.
+  const finding = !data
+    ? ""
+    : expenses === 0 && income === 0
+      ? "Todavía no hay movimientos en este periodo."
+      : (net < 0
+          ? `Salieron ${crc(-net)} más de lo que entró.`
+          : `Te quedaron ${crc(net)} (${pct(net / (income || 1), 0)} de lo que entró).`) +
+        (top ? ` Lo que más pesa: ${top.name.toLowerCase()}, ${pct(top.value / (expenses || 1), 0)} del gasto.` : "");
 
   return (
     <>
       <div className="page-head">
         <div>
-          <div className="eyebrow">Finanzas personales</div>
           <div className="title-row">
             <h1>{isYear ? `Tu año ${period}` : `Resumen de ${periodLabel(period).toLowerCase()}`}</h1>
             <Help topic="resumen" />
           </div>
-          <div className="muted">Montos en colones. Los movimientos en dólares se convierten con el tipo de cambio de cada día.</div>
+          <div className="muted">{finding || "Cargando…"}</div>
         </div>
         <PeriodPicker value={period} onChange={setPeriod} allowYear />
       </div>
@@ -100,10 +111,16 @@ export default function Dashboard() {
           )}
 
           <div className="grid grid-4">
-            <Stat label="Ingresos" value={<span className="pos">{crc(data.income)}</span>} />
+            <Stat
+              lead
+              label="Neto"
+              value={<span className={net < 0 ? "neg" : "pos"}>{crc(data.net)}</span>}
+              hint={income ? `Tasa de ahorro ${pct(net / income, 0)}` : "Sin ingresos registrados"}
+            />
+            <Stat label="Ingresos" value={crc(data.income)} />
             <Stat
               label="Gastos"
-              value={<span className="neg">{crc(data.expenses)}</span>}
+              value={crc(data.expenses)}
               hint={
                 Object.keys(data.expenses_by_currency).some((c) => c !== "CRC")
                   ? Object.entries(data.expenses_by_currency)
@@ -112,7 +129,6 @@ export default function Dashboard() {
                   : "Todo en colones"
               }
             />
-            <Stat label="Neto" value={crc(data.net)} hint={income ? `Tasa de ahorro ${pct(Number(data.net) / income, 0)}` : "Sin ingresos registrados"} />
             <Stat
               label="Dólar hoy"
               value={data.fx ? `₡${Number(data.fx.sell).toFixed(2)}` : "—"}
@@ -132,20 +148,23 @@ export default function Dashboard() {
               {categories.length === 0 ? (
                 <p className="muted">Sin gastos en este periodo.</p>
               ) : (
-                <ResponsiveContainer width="100%" height={Math.max(180, categories.length * 30)}>
-                  <BarChart data={categories} layout="vertical" margin={{ left: 10, right: 24 }}>
-                    <CartesianGrid horizontal={false} stroke={CHART.grid} />
-                    <XAxis type="number" tickFormatter={compact} tick={{ fontSize: 11 }} />
-                    <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 12 }} />
-                    <Tooltip formatter={(v) => crc(Number(v))} {...tooltipStyle} cursor={{ fill: "var(--surface-2)" }} />
-                    <Bar dataKey="value" name="Gasto" radius={[0, 5, 5, 0]} barSize={16}>
-                      {categories.map((c, i) => (
-                        <Cell key={c.name} fill={c.name === "Sin categoría" ? "#9a9a8a" : CHART.palette[i % CHART.palette.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                <ol className="rank">
+                  {categories.slice(0, 7).map((c, i) => (
+                    <li key={c.name} className={c.name === "Sin categoría" ? "unset" : i === 0 ? "top" : ""}>
+                      <span className="rank-name">{c.name}</span>
+                      <span className="rank-val">{crc(c.value)}</span>
+                      <span className="rank-share">{pct(c.value / (expenses || 1), 0)}</span>
+                      <span className="rank-bar" aria-hidden>
+                        <span style={{ width: `${(c.value / (categories[0]?.value || 1)) * 100}%` }} />
+                      </span>
+                    </li>
+                  ))}
+                </ol>
               )}
+              {categories.length > 7 && <p className="muted small">Y {categories.length - 7} categorías más.</p>}
+              <div className="card-foot">
+                <Link to="/transacciones">{data.pending_categorization ? `Categorizar ${data.pending_categorization} pendientes` : "Ver transacciones"}</Link>
+              </div>
             </div>
             <div className="card">
               <CardTitle title={isYear ? `Mes a mes, ${period}` : "Últimos 12 meses"} topic="resumen.evolucion" />
@@ -156,9 +175,9 @@ export default function Dashboard() {
                   <YAxis tickFormatter={compact} tick={{ fontSize: 11 }} width={48} />
                   <Tooltip formatter={(v) => crc(Number(v))} labelFormatter={(l) => monthTick(String(l))} {...tooltipStyle} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="Ingresos" fill={CHART.accent} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Gastos" fill={CHART.danger} radius={[4, 4, 0, 0]} />
-                  <Line dataKey="Neto" stroke={CHART.warn} strokeWidth={2} dot={false} />
+                  <Bar isAnimationActive={false} dataKey="Ingresos" fill={CHART.accent} radius={[4, 4, 0, 0]} />
+                  <Bar isAnimationActive={false} dataKey="Gastos" fill={CHART.danger} radius={[4, 4, 0, 0]} />
+                  <Line isAnimationActive={false} dataKey="Neto" stroke={CHART.warn} strokeWidth={2} dot={false} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -180,8 +199,8 @@ export default function Dashboard() {
                 <YAxis yAxisId="c" orientation="right" tickFormatter={compact} tick={{ fontSize: 11 }} width={52} />
                 <Tooltip formatter={(v) => crc(Number(v))} {...tooltipStyle} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar yAxisId="d" dataKey="Gasto" name={isYear ? "Gasto del mes" : "Gasto del día"} fill={CHART.accent2} radius={[3, 3, 0, 0]} />
-                <Area yAxisId="c" dataKey="Acumulado" stroke={CHART.danger} fill="url(#cumul)" strokeWidth={2} />
+                <Bar isAnimationActive={false} yAxisId="d" dataKey="Gasto" name={isYear ? "Gasto del mes" : "Gasto del día"} fill={CHART.accent2} radius={[3, 3, 0, 0]} />
+                <Area isAnimationActive={false} yAxisId="c" dataKey="Acumulado" stroke={CHART.danger} fill="url(#cumul)" strokeWidth={2} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -227,7 +246,7 @@ export default function Dashboard() {
                       <XAxis dataKey="d" tick={{ fontSize: 12 }} />
                       <YAxis tickFormatter={compact} tick={{ fontSize: 11 }} width={48} />
                       <Tooltip formatter={(v) => crc(Number(v))} {...tooltipStyle} cursor={{ fill: "var(--surface-2)" }} />
-                      <Bar dataKey="v" name="Gasto" fill={CHART.warn} radius={[4, 4, 0, 0]} />
+                      <Bar isAnimationActive={false} dataKey="v" name="Gasto" fill={CHART.warn} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -241,7 +260,7 @@ export default function Dashboard() {
                       <XAxis dataKey="month" tickFormatter={monthTick} tick={{ fontSize: 11 }} />
                       <YAxis tickFormatter={(v: number) => `${Math.round(v * 100)}%`} tick={{ fontSize: 11 }} width={48} />
                       <Tooltip formatter={(v) => pct(Number(v), 0)} labelFormatter={(l) => monthTick(String(l))} {...tooltipStyle} />
-                      <Line dataKey="Ahorro" stroke={CHART.accent} strokeWidth={2} connectNulls />
+                      <Line isAnimationActive={false} dataKey="Ahorro" stroke={CHART.accent} strokeWidth={2} connectNulls />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
@@ -249,7 +268,7 @@ export default function Dashboard() {
                   <CardTitle title="Gasto por moneda" topic="resumen" />
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
-                      <Pie data={currencies} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={3}>
+                      <Pie isAnimationActive={false} data={currencies} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={3}>
                         {currencies.map((c, i) => (
                           <Cell key={c.name} fill={CHART.palette[i]} />
                         ))}

@@ -4,6 +4,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 
 import { useApi } from "../hooks";
 import type { Instrument } from "../types-market";
+import { Icons } from "./icons";
 import { Change, Figure } from "./ui";
 
 interface History {
@@ -42,11 +43,11 @@ export default function ChartDrawer({ inst, onClose }: { inst: Instrument; onClo
       <aside className="drawer wide" role="dialog" aria-modal="true" aria-label={inst.name} onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
           <div>
-            <div className="eyebrow">{inst.symbol}</div>
             <h2>{inst.name}</h2>
+            <div className="muted small">{inst.symbol}</div>
           </div>
           <button className="nav" aria-label="Cerrar" onClick={onClose}>
-            ✕
+            {Icons.close}
           </button>
         </div>
         <div className="row" style={{ alignItems: "baseline", gap: 14 }}>
@@ -83,7 +84,7 @@ export default function ChartDrawer({ inst, onClose }: { inst: Instrument; onClo
                   formatter={(v) => Number(v).toLocaleString("es-CR", { maximumFractionDigits: 2 })}
                   contentStyle={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, fontSize: 13 }}
                 />
-                <Area dataKey="close" name="Cierre" stroke={color} strokeWidth={2} fill="url(#hist)" />
+                <Area isAnimationActive={false} dataKey="close" name="Cierre" stroke={color} strokeWidth={2} fill="url(#hist)" />
               </AreaChart>
             </ResponsiveContainer>
           )}

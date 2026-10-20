@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { HELP } from "../help";
+import { Icons } from "./icons";
 
 /** Botón "?" que abre un panel lateral con la explicación de la sección. */
 export default function Help({ topic, label }: { topic: string; label?: string }) {
@@ -32,11 +33,10 @@ export default function Help({ topic, label }: { topic: string; label?: string }
             <aside className="drawer" role="dialog" aria-modal="true" aria-label={entry.title} onClick={(e) => e.stopPropagation()}>
               <div className="drawer-head">
                 <div>
-                  <div className="eyebrow">Ayuda</div>
                   <h2>{entry.title}</h2>
                 </div>
                 <button className="nav" aria-label="Cerrar" onClick={() => setOpen(false)}>
-                  ✕
+                  {Icons.close}
                 </button>
               </div>
               <p className="drawer-lead">{entry.what}</p>
@@ -63,7 +63,7 @@ export default function Help({ topic, label }: { topic: string; label?: string }
                   </dl>
                 </>
               )}
-              {entry.tip && <div className="drawer-tip">💡 {entry.tip}</div>}
+              {entry.tip && <div className="drawer-tip">{entry.tip}</div>}
             </aside>
           </div>,
           document.body,

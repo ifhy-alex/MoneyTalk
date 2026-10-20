@@ -78,6 +78,32 @@ export default function Ingestion() {
               Importar
             </button>
           </div>
+          <h3 style={{ marginTop: 20 }}>Formatos que entiende</h3>
+          <table className="small">
+            <tbody>
+              <tr>
+                <td>Banco Popular</td>
+                <td className="muted">Reporte de movimientos de cuenta</td>
+                <td>
+                  <span className="badge ok">Probado</span>
+                </td>
+              </tr>
+              <tr>
+                <td>BAC Credomatic</td>
+                <td className="muted">Estado de cuenta de tarjeta</td>
+                <td>
+                  <span className="badge">Por validar</span>
+                </td>
+              </tr>
+              <tr>
+                <td>Otros bancos</td>
+                <td className="muted">Se guardan y se leen cuando exista su lector</td>
+                <td>
+                  <span className="badge">Se guarda</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <GmailCard onResult={(r) => {
           setResult(r);

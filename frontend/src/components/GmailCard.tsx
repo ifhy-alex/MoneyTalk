@@ -140,7 +140,11 @@ export default function GmailCard({ onResult }: { onResult: (r: IngestResult) =>
 
       {s && (
         <>
-          <button className="link small" style={{ marginTop: 12 }} onClick={() => setShowBanks(!showBanks)}>
+          <p className="small muted" style={{ marginTop: 12, marginBottom: 4 }}>
+            Busca correos de {s.banks.length} entidades de Costa Rica. Ya tienen lector:{" "}
+            {s.banks.filter((b) => b.parser).map((b) => b.name).join(" y ")}; los demás se guardan para leerlos después.
+          </p>
+          <button className="link small" onClick={() => setShowBanks(!showBanks)}>
             {showBanks ? "Ocultar" : "Ver"} bancos que se buscan ({s.banks.length})
           </button>
           {showBanks && (

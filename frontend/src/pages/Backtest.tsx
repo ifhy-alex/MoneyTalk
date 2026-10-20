@@ -202,9 +202,9 @@ export default function Backtest() {
                 <YAxis tickFormatter={(v: number) => num(v, 2)} />
                 <Tooltip formatter={(v) => num(Number(v), 3)} />
                 <Legend />
-                <Line dataKey="strategy" name="Estrategia" stroke={CHART.accent} strokeWidth={2} />
-                <Line dataKey="universe" name="Universo" stroke={CHART.warn} />
-                <Line dataKey="benchmark" name="SPY" stroke={CHART.accent2} />
+                <Line isAnimationActive={false} dataKey="strategy" name="Estrategia" stroke={CHART.accent} strokeWidth={2} />
+                <Line isAnimationActive={false} dataKey="universe" name="Universo" stroke={CHART.warn} />
+                <Line isAnimationActive={false} dataKey="benchmark" name="SPY" stroke={CHART.accent2} />
               </LineChart>
             </ResponsiveContainer>
           </div>
