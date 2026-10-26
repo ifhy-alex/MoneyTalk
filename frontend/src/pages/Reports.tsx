@@ -28,6 +28,17 @@ interface Report {
 const big = (v: number | null, metric: string) =>
   v === null ? "—" : metric === "eps_diluted" ? `$${num(v, 2)}` : new Intl.NumberFormat("es-CR", { notation: "compact", maximumFractionDigits: 2 }).format(v);
 
+const LATENT_SPOKES = [
+  { label: "Ingresos", change: 0 },
+  { label: "Utilidad bruta", change: 0 },
+  { label: "Utilidad op.", change: 0 },
+  { label: "Utilidad neta", change: 0 },
+  { label: "EPS diluido", change: 0 },
+  { label: "Flujo op.", change: 0 },
+  { label: "Efectivo", change: 0 },
+  { label: "Deuda LP", change: 0 },
+];
+
 export default function Reports() {
   const [symbol, setSymbol] = useState("");
   const [report, setReport] = useState<Report>();
@@ -70,6 +81,27 @@ export default function Reports() {
       </div>
       <Disclaimer />
       <ErrorNotice error={error} />
+
+      {!report && (
+        <figure className="card report-art">
+          <Compass
+            latent
+            spokes={LATENT_SPOKES}
+            label="Rosa de los vientos en reposo para reportes 10-Q"
+          />
+          <figcaption>
+            <h2>Rosa de los vientos del 10-Q</h2>
+            <p className="small muted">
+              Ingresá un símbolo de EE. UU. arriba (por ejemplo <code>MSFT</code>, <code>AAPL</code> o <code>NVDA</code>)
+              para trazar cómo cambiaron sus métricas frente al mismo trimestre del año pasado.
+            </p>
+            <p className="small muted">
+              El anillo punteado representa variación cero: los rayos que crecen salen hacia afuera en verde y los que
+              se contraen entran hacia el centro en bermellón.
+            </p>
+          </figcaption>
+        </figure>
+      )}
 
       {report && (
         <>

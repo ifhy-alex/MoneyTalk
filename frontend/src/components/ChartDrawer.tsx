@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+import RangeRuler from "../art/RangeRuler";
 import { useApi } from "../hooks";
 import type { Instrument } from "../types-market";
 import { Icons } from "./icons";
@@ -89,6 +90,15 @@ export default function ChartDrawer({ inst, onClose }: { inst: Instrument; onClo
             </ResponsiveContainer>
           )}
         </div>
+        <h3>Posición en el rango de 52 semanas</h3>
+        <RangeRuler
+          last={inst.last}
+          from52wHigh={inst.from_52w_high}
+          spark={inst.spark}
+          aboveSma200={inst.above_sma200}
+          volatility1m={inst.volatility_1m}
+          label={`Regla de 52 semanas para ${inst.name}`}
+        />
         <h3>Rendimiento por periodo</h3>
         <dl>
           {rows.map(([label, v]) => (

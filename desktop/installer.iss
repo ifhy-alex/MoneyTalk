@@ -4,7 +4,7 @@
 ; actualizar no borra la información.
 
 #define AppName "MoneyTalk"
-#define AppVersion "0.1.0"
+#define AppVersion "0.2.0"
 
 [Setup]
 AppId={{6F0C2E52-3B7A-4C8F-9C3E-5D2A61B0A9E1}

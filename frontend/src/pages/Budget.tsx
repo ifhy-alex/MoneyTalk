@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { api, type Category } from "../api";
+import BudgetHarp from "../art/BudgetHarp";
 import TensionWave from "../art/TensionWave";
 import { ErrorNotice } from "../components/ui";
 import { currentMonth, money, pct } from "../format";
@@ -38,6 +39,15 @@ export default function Budget() {
   }
 
   const expenseCats = cats.data?.filter((c) => c.kind === "expense") ?? [];
+  // Avance del calendario en el mes seleccionado (0…1) para comparar ritmo de gasto vs día del mes.
+  const calendarRatio = (() => {
+    const now = new Date();
+    const cur = currentMonth();
+    if (month < cur) return 1;
+    if (month > cur) return 0;
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return Math.min(1, now.getDate() / daysInMonth);
+  })();
   // Referencia para empezar: tu gasto mensual promedio por categoría en lo que va del año.
   const year = useApi<Dashboard>(budgets.data && budgets.data.length === 0 ? `/dashboard?period=${month.slice(0, 4)}` : null);
   const monthsWithData = Math.max(1, year.data?.trend.filter((t) => Number(t.expenses) > 0).length ?? 1);
@@ -71,6 +81,21 @@ export default function Budget() {
         <PeriodPicker value={month} onChange={setMonth} />
       </div>
       <ErrorNotice error={error ?? budgets.error} />
+
+      {budgets.data && budgets.data.length > 0 && (
+        <figure className="card art-band">
+          <BudgetHarp
+            strings={budgets.data.map((b) => ({ category: b.category, ratio: b.ratio }))}
+            calendarRatio={calendarRatio}
+            label={`Diapasón de ${budgets.data.length} presupuestos frente al avance del mes`}
+          />
+          <figcaption>
+            Todas tus categorías presupuestadas como cuerdas de un diapasón: la aguja dorada marca el día del mes en el que
+            vas ({Math.round(calendarRatio * 100)} %). Las cuerdas que vibran más allá de la aguja van adelantadas al
+            calendario.
+          </figcaption>
+        </figure>
+      )}
 
       <div className="card">
         <h2>Agregar o actualizar</h2>

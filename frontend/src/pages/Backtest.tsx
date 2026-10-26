@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { api } from "../api";
-import Ridgeline from "../art/Ridgeline";
+import DrawdownTapestry from "../art/DrawdownTapestry";
 import { CHART, Disclaimer, ErrorNotice } from "../components/ui";
 import { num, pct } from "../format";
 import Help from "../components/Help";
@@ -161,6 +161,21 @@ export default function Backtest() {
         </div>
       </div>
 
+      {!result && (
+        <figure className="card art-band">
+          <DrawdownTapestry
+            startYear={range.start_year}
+            endYear={range.end_year}
+            universeCount={universe.split(/[\s,;]+/).filter(Boolean).length}
+            label={`Tapiz en espera para ${range.start_year}–${range.end_year}`}
+          />
+          <figcaption>
+            Vista previa del tapiz anual ({range.start_year}–{range.end_year}): al ejecutar, arriba de la línea de flotación se
+            graba el rendimiento de cada rebalanceo frente al SPY y abajo el reflejo sumergido de las caídas (drawdown).
+          </figcaption>
+        </figure>
+      )}
+
       {result && (
         <>
           <div className="notice warn">
@@ -172,21 +187,25 @@ export default function Backtest() {
             </ul>
           </div>
 
-          {result.curve.length > 1 && (
-            <figure className="ridge-band">
-              <Ridgeline
-                height={130}
-                sort={false}
-                ridges={[
-                  { label: "Índice (SPY)", values: result.curve.map((p) => p.benchmark) },
-                  { label: "Universo a partes iguales", values: result.curve.map((p) => p.universe) },
-                  { label: "Estrategia", values: result.curve.map((p) => p.strategy) },
-                ]}
-                label="Relieve de la estrategia frente al universo y al índice"
+          {result.periods.length > 0 && (
+            <figure className="card art-band">
+              <DrawdownTapestry
+                periods={result.periods.map((p) => ({
+                  year: p.start.slice(0, 4),
+                  holdings: p.holdings,
+                  strategyReturn: p.strategy_return,
+                  benchmarkReturn: p.benchmark_return,
+                }))}
+                curve={result.curve}
+                startYear={range.start_year}
+                endYear={range.end_year}
+                universeCount={universe.split(/[\s,;]+/).filter(Boolean).length}
+                label="Tapiz de cosechas anuales y reflejo de caída frente al índice"
               />
               <figcaption>
-                De atrás hacia adelante: el índice, el universo a partes iguales y tu estrategia. Cada cresta tiene su propia
-                escala para comparar la forma del recorrido; los valores exactos están en el resumen.
+                Arriba de la línea de agua: cada columna es un año de rebalanceo (en verde o bermellón según su retorno; el
+                trazo con punto marca el SPY ese año). Debajo del agua: el reflejo de las caídas desde el máximo previo
+                (drawdown) frente al índice punteado.
               </figcaption>
             </figure>
           )}

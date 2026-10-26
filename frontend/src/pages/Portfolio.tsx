@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { api } from "../api";
+import CustodyRing from "../art/CustodyRing";
 import { CHART, Disclaimer, ErrorNotice, Stat } from "../components/ui";
 import { money, num, pct } from "../format";
-import Ridgeline from "../art/Ridgeline";
 import { useApi } from "../hooks";
 import Help from "../components/Help";
 
@@ -64,24 +64,33 @@ interface TradeRow {
 }
 
 function AllocationPie({ title, data }: { title: string; data: Record<string, number> }) {
-  const items = Object.entries(data).map(([name, value]) => ({ name, value }));
+  const items = Object.entries(data)
+    .map(([label, weight]) => ({ label, weight }))
+    .filter((x) => x.weight > 0)
+    .sort((a, b) => b.weight - a.weight);
   return (
     <div className="card">
       <h3>{title}</h3>
       {items.length === 0 ? (
         <p className="muted small">Sin datos.</p>
       ) : (
-        <ResponsiveContainer width="100%" height={220}>
-          <PieChart>
-            <Pie isAnimationActive={false} data={items} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
-              {items.map((_, i) => (
-                <Cell key={i} fill={CHART.palette[i % CHART.palette.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(v) => pct(Number(v))} />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-          </PieChart>
-        </ResponsiveContainer>
+        <>
+          <CustodyRing
+            compact
+            slices={items}
+            totalLabel={`Distribución ${title.toLowerCase()}`}
+            centerTop={`${items.length}`}
+            centerBottom={items.length === 1 ? "grupo" : "grupos"}
+          />
+          <ul className="alloc-list small">
+            {items.map((it) => (
+              <li key={it.label}>
+                <span>{it.label}</span>
+                <span className="mono">{pct(it.weight, 0)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );
@@ -139,24 +148,47 @@ export default function Portfolio() {
           <div className="muted">Registro manual de posiciones; precios del proveedor configurado (con caché).</div>
         </div>
       </div>
-      {bench.data && bench.data.series.length > 1 && (
-        <figure className="ridge-band">
-          <Ridgeline
-            height={130}
-            sort={false}
-            ridges={[
-              { label: "Invertido", values: bench.data.series.map((p) => Number(p.invested)) },
-              { label: bench.data.benchmark, values: bench.data.series.map((p) => Number(p.benchmark)) },
-              { label: "Portafolio", values: bench.data.series.map((p) => Number(p.portfolio)) },
-            ]}
-            label={`Relieve de tu portafolio frente a ${bench.data.benchmark} y lo invertido`}
-          />
-          <figcaption>
-            De atrás hacia adelante: lo que invertiste, {bench.data.benchmark} con esas mismas compras y tu portafolio.
-            Cada cresta tiene su propia escala; los montos exactos están en el gráfico de abajo.
-          </figcaption>
-        </figure>
-      )}
+      {port.data && port.data.positions.length > 0 && (() => {
+        const sortedByWeight = [...port.data.positions].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
+        const topPos = sortedByWeight[0];
+        const withPnl = port.data.positions.filter((p) => p.unrealized_pct !== null);
+        const bestPos = [...withPnl].sort((a, b) => (b.unrealized_pct ?? 0) - (a.unrealized_pct ?? 0))[0];
+        return (
+          <figure className="card report-art">
+            <CustodyRing
+              slices={port.data.positions.map((p) => ({
+                label: p.symbol,
+                sub: p.name ?? undefined,
+                weight: p.weight ?? 1 / port.data!.positions.length,
+                change: p.unrealized_pct,
+              }))}
+              totalLabel="Rueda de custodia del portafolio por peso y rendimiento"
+              centerTop={port.data.total_value_usd ? money(port.data.total_value_usd, "USD") : `${port.data.positions.length}`}
+              centerBottom={`${port.data.positions.length} ${port.data.positions.length === 1 ? "posición" : "posiciones"}`}
+            />
+            <figcaption>
+              <h2>Custodia y peso por posición</h2>
+              <p className="small">
+                Cada arco guilloché es una posición en proporción a su peso dentro del portafolio. Las ondas van en verde si
+                la posición acumula ganancia no realizada y en bermellón si está por debajo de su costo promedio.
+              </p>
+              <p className="small">
+                {topPos && (
+                  <>
+                    Mayor peso: <b>{topPos.symbol}</b> ({pct(topPos.weight, 1)}).{" "}
+                  </>
+                )}
+                {bestPos && bestPos.unrealized_pct !== null && (
+                  <>
+                    Mejor desempeño: <b>{bestPos.symbol}</b>{" "}
+                    <span className={bestPos.unrealized_pct >= 0 ? "pos" : "neg"}>{pct(bestPos.unrealized_pct, 1)}</span>.
+                  </>
+                )}
+              </p>
+            </figcaption>
+          </figure>
+        );
+      })()}
       <Disclaimer />
       <ErrorNotice error={error ?? port.error} />
       {port.data?.warnings.map((w) => (

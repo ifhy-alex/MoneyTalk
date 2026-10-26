@@ -57,6 +57,24 @@ const NAV: { group: string; items: NavItem[] }[] = [
   },
 ];
 
+function BrandSeal() {
+  // Cicloide guilloché de 12 pétalos detrás del signo de colón, como sello de moneda/billete.
+  let d = "";
+  const steps = 180;
+  for (let s = 0; s <= steps; s++) {
+    const a = (s / steps) * Math.PI * 2;
+    const r = 13.2 + 2.1 * Math.sin(12 * a) + 0.9 * Math.cos(25 * a);
+    const x = 18 + r * Math.cos(a);
+    const y = 18 + r * Math.sin(a);
+    d += `${s ? "L" : "M"}${x.toFixed(2)},${y.toFixed(2)}`;
+  }
+  return (
+    <svg className="brand-guilloche" viewBox="0 0 36 36" aria-hidden>
+      <path d={`${d}Z`} />
+    </svg>
+  );
+}
+
 export default function App() {
   return (
     <div className="layout">
@@ -66,7 +84,8 @@ export default function App() {
       <nav className="sidebar" aria-label="Navegación principal">
         <div className="brand">
           <div className="brand-mark" aria-hidden>
-            ₡
+            <BrandSeal />
+            <span>₡</span>
           </div>
           <div>
             <div className="brand-name">MoneyTalk</div>

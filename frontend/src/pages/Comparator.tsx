@@ -249,6 +249,24 @@ export default function Comparator() {
         </div>
       </div>
 
+      {!result && options.data && options.data.length > 0 && (
+        <figure className="card art-band">
+          <Fan
+            latent
+            years={Math.max(0.25, Number(params.months) / 12)}
+            blades={(selected.length > 0 ? options.data.filter((o) => selected.includes(o.id)) : options.data).map((o) => ({
+              label: `${o.name} (${o.currency})`,
+              rate: Number(o.annual_rate) * (1 - Number(o.tax_rate)),
+            }))}
+            label="Abanico preliminar de las opciones guardadas en su propia moneda"
+          />
+          <figcaption>
+            Vista previa en la moneda de cada opción (tasa neta de impuesto a {params.months} meses). Marcá las alternativas y
+            apretá «Comparar» para unificarlas en {params.currency} aplicando variación cambiaria e inflación.
+          </figcaption>
+        </figure>
+      )}
+
       {result && result.rows.length > 0 && (
         <figure className="card art-band">
           <Fan
