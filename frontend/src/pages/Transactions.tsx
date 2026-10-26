@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { api, qs, type Category, type RuleSuggestion, type Transaction } from "../api";
+import Barcode from "../art/Barcode";
+import type { Rate } from "../types-finance";
 import { currentMonth, money, shortDate } from "../format";
 import { useApi } from "../hooks";
 import Help from "../components/Help";
@@ -42,6 +44,19 @@ export default function Transactions() {
   }
 
   const pending = txns.data?.filter((t) => t.category_status !== "confirmed").length ?? 0;
+  const fx = useApi<Rate | null>("/fx/latest");
+  const marks = useMemo(() => {
+    const transfer = new Set(cats.data?.filter((c) => c.kind === "transfer").map((c) => c.id));
+    const usd = Number(fx.data?.sell ?? 0) || 510;
+    // Los pagos de tarjeta y transferencias propias no son gasto ni ingreso: fuera del dibujo.
+    return (txns.data ?? [])
+      .filter((t) => t.category_id === null || !transfer.has(t.category_id))
+      .map((t) => ({
+        date: t.txn_date,
+        amount: Number(t.amount) * (t.currency === "USD" ? usd : 1),
+        pending: t.category_status !== "confirmed",
+      }));
+  }, [txns.data, cats.data, fx.data]);
 
   return (
     <>
@@ -74,6 +89,15 @@ export default function Transactions() {
         </div>
       </div>
 
+      {marks.length > 0 && (
+        <figure className="art-band">
+          <Barcode marks={marks} label={`Código de barras de ${marks.length} movimientos`} />
+          <figcaption>
+            Cada trazo es un movimiento, ubicado en su día: hacia arriba lo que entró, hacia abajo lo que salió, más largo
+            cuanto mayor el monto. En dorado, lo que todavía falta confirmar.
+          </figcaption>
+        </figure>
+      )}
       {message && <div className="notice info">{message}</div>}
       {suggestion && (
         <div className="notice warn row">

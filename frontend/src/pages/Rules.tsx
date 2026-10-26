@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { api, type Category, type MatchType, type Rule } from "../api";
+import StringArt from "../art/StringArt";
 import { useApi } from "../hooks";
 import Help from "../components/Help";
 
@@ -71,6 +72,19 @@ export default function Rules() {
         </div>
       </div>
       {error && <div className="notice error">{error}</div>}
+
+      {rules.data && rules.data.length > 0 && (
+        <figure className="card art-band">
+          <StringArt
+            threads={rules.data.map((r) => ({ from: r.pattern, to: r.category_name, active: r.is_active }))}
+            label={`Hilorama de ${rules.data.length} reglas hacia sus categorías`}
+          />
+          <figcaption>
+            Cada hilo es una regla: une un comercio con su categoría. Los haces más densos son las categorías que MoneyTalk
+            ya clasifica sola; las reglas desactivadas van punteadas. Pasá el mouse por un hilo para ver cuál es.
+          </figcaption>
+        </figure>
+      )}
 
       <div className="grid grid-2">
         <div className="card">

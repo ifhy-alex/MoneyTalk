@@ -262,13 +262,13 @@ class Services:
 LOADING_HTML = """<!doctype html><html><head><meta charset="utf-8"><style>
 :root{color-scheme:light dark}
 body{margin:0;height:100vh;display:grid;place-items:center;
-font:15px "Segoe UI",system-ui,sans-serif;background:#0c1310;color:#e8ece3}
+font:15px Verdana,Tahoma,sans-serif;background:#0c1310;color:#e8ece3}
 @media (prefers-color-scheme:light){body{background:#eceee8;color:#14201b}}
 .b{width:160px;height:3px;background:#52c99a33;overflow:hidden;border-radius:2px;margin:18px auto 0}
 .b i{display:block;width:40%;height:100%;background:#52c99a;animation:m 1.1s ease-in-out infinite}
 @keyframes m{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
 @media (prefers-reduced-motion:reduce){.b i{animation:none;width:100%}}
-h1{font:600 30px Georgia,"Times New Roman",serif;letter-spacing:-.02em;margin:0}
+h1{font:700 30px Verdana,Tahoma,sans-serif;letter-spacing:-.04em;margin:0}
 p{opacity:.7;margin:6px 0 0}</style></head>
 <body><div style="text-align:center"><h1>MoneyTalk</h1>
 <p>Preparando tus datos…</p><div class="b"><i></i></div></div></body></html>"""

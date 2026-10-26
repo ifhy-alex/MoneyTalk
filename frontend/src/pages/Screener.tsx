@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState } from "react";
 import { api } from "../api";
 import { Disclaimer, ErrorNotice } from "../components/ui";
 import { num, pct } from "../format";
+import PunchCard from "../art/PunchCard";
 import { useApi } from "../hooks";
 import Help from "../components/Help";
 import { Icons } from "../components/icons";
@@ -192,6 +193,22 @@ export default function Screener() {
           </button>
         </div>
       </div>
+
+      {rows && rows.some((r) => r.results.length > 0) && (
+        <figure className="card art-band">
+          <PunchCard
+            columns={(rows.find((r) => r.results.length > 0)?.results ?? []).map((x) => x.label)}
+            rows={rows
+              .filter((r) => r.results.length > 0)
+              .map((r) => ({ symbol: r.symbol, cells: r.results.map((x) => x.passed) }))}
+            label="Tarjeta perforada del screener"
+          />
+          <figcaption>
+            Una fila por empresa y una columna por criterio, en el orden de tus filtros: agujero lleno si lo cumple, anillo si
+            no, guion si falta el dato. Las filas en verde pasan todos.
+          </figcaption>
+        </figure>
+      )}
 
       {rows && (
         <div className="card table-wrap">

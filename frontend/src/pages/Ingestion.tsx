@@ -1,11 +1,14 @@
 import { useState } from "react";
 
 import { api, type IngestResult, type RawDocument } from "../api";
+import Seal from "../art/Seal";
 import { useApi } from "../hooks";
 import GmailCard from "../components/GmailCard";
 import Help from "../components/Help";
 
 const STATUS_CLASS = { parsed: "ok", failed: "bad", ignored: "", pending: "warn" };
+const SEAL_TONE = { parsed: "ok", failed: "bad", ignored: "muted", pending: "warn" } as const;
+const STATUS_LABEL = { parsed: "leído", failed: "falló", ignored: "ignorado", pending: "pendiente" };
 
 export default function Ingestion() {
   const docs = useApi<RawDocument[]>("/ingestion/documents");
@@ -124,6 +127,25 @@ export default function Ingestion() {
             Reprocesar fallidos o desactualizados
           </button>
         </div>
+        {docs.data && docs.data.length > 0 && (
+          <>
+            <div className="seal-wall">
+              {docs.data.slice(0, 60).map((d) => (
+                <Seal
+                  key={d.id}
+                  seed={`doc-${d.id}`}
+                  tone={SEAL_TONE[d.status]}
+                  size={44}
+                  title={`${d.source_type === "email" ? "Correo" : "PDF"} #${d.id}: ${d.subject ?? "sin asunto"} (${STATUS_LABEL[d.status]})`}
+                />
+              ))}
+            </div>
+            <p className="small muted" style={{ marginTop: 0 }}>
+              Un sello por documento recibido: verde si se leyó bien, bermellón si falló, dorado si está pendiente y gris si
+              se ignoró.
+            </p>
+          </>
+        )}
         <table>
           <thead>
             <tr>
