@@ -5,19 +5,18 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   ComposedChart,
   Legend,
   Line,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
+import BimetallicSeal from "../art/BimetallicSeal";
 import FlowField from "../art/FlowField";
+import Rosette from "../art/Rosette";
 import TensionWave from "../art/TensionWave";
 import { shapeFromSummary } from "../art/core";
 import Help from "../components/Help";
@@ -73,7 +72,11 @@ export default function Dashboard() {
     })) ?? [];
   const weekday = data ? Object.entries(data.by_weekday).map(([d, v]) => ({ d, v: Number(v) })) : [];
   const currencies = data
-    ? Object.entries(data.expenses_by_currency).map(([c, v]) => ({ name: c, value: c === "USD" ? Number(v) * Number(data.fx?.sell ?? 0) : Number(v) }))
+    ? Object.entries(data.expenses_by_currency).map(([c, v]) => ({
+        code: c,
+        valueCrc: c === "USD" ? Number(v) * Number(data.fx?.sell ?? 0) : Number(v),
+        originalLabel: money(v, c),
+      }))
     : [];
   const income = Number(data?.income ?? 0);
   const net = Number(data?.net ?? 0);
@@ -278,17 +281,11 @@ export default function Dashboard() {
                 </div>
                 <div className="card">
                   <CardTitle title="Gasto por moneda" topic="resumen" />
-                  <ResponsiveContainer width="100%" height={220}>
-                    <PieChart>
-                      <Pie isAnimationActive={false} data={currencies} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={3}>
-                        {currencies.map((c, i) => (
-                          <Cell key={c.name} fill={CHART.palette[i]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(v) => crc(Number(v))} {...tooltipStyle} />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {currencies.length === 0 ? (
+                    <p className="muted">Sin gastos registrados.</p>
+                  ) : (
+                    <BimetallicSeal items={currencies} label="Balanza bimetálica de gasto en colones y dólares" />
+                  )}
                 </div>
               </div>
             </>
@@ -323,16 +320,24 @@ export default function Dashboard() {
                 </p>
               )}
               {data.goals.map((g) => (
-                <div key={g.id} style={{ marginBottom: 12 }}>
-                  <div className="row small">
-                    <b>{g.name}</b>
-                    {g.is_emergency_fund && <span className="badge ok">Prioritaria</span>}
-                    <span className="spacer" />
-                    <span className="muted mono">
-                      {money(g.saved, g.currency)} / {money(g.target_amount, g.currency)}
-                    </span>
+                <div key={g.id} className="dash-goal">
+                  <Rosette
+                    seed={`${g.id}:${g.name}`}
+                    ratio={g.ratio}
+                    size={46}
+                    emergency={g.is_emergency_fund}
+                    label={g.name}
+                  />
+                  <div className="dash-goal-body">
+                    <div className="row small">
+                      <b>{g.name}</b>
+                      {g.is_emergency_fund && <span className="badge ok">Prioritaria</span>}
+                      <span className="spacer" />
+                      <span className="muted mono">
+                        {money(g.saved, g.currency)} / {money(g.target_amount, g.currency)}
+                      </span>
+                    </div>
                   </div>
-                  <Progress ratio={g.ratio} />
                 </div>
               ))}
             </div>

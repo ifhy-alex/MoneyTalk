@@ -72,10 +72,16 @@ export default function Rosette({ seed, ratio, size = 168, emergency = false, la
           </g>
         );
       })}
-      <text x="100" y="104" textAnchor="middle" dominantBaseline="middle" className="rosette-pct">
-        {pct}
-        <tspan className="rosette-unit"> %</tspan>
-      </text>
+      {size >= 80 ? (
+        <text x="100" y="104" textAnchor="middle" dominantBaseline="middle" className="rosette-pct">
+          {pct}
+          <tspan className="rosette-unit"> %</tspan>
+        </text>
+      ) : (
+        <text x="100" y="104" textAnchor="middle" dominantBaseline="middle" className="rosette-pct mini">
+          {pct}%
+        </text>
+      )}
     </svg>
   );
 }

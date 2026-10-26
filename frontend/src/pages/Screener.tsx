@@ -194,6 +194,24 @@ export default function Screener() {
         </div>
       </div>
 
+      {!rows && criteria.length > 0 && symbols().length > 0 && (
+        <figure className="card art-band">
+          <PunchCard
+            latent
+            columns={criteria.map((c) => m[c.metric]?.label ?? c.metric)}
+            rows={symbols()
+              .slice(0, 18)
+              .map((s) => ({ symbol: s, cells: criteria.map(() => null) }))}
+            label="Tarjeta perforada en espera de evaluación"
+          />
+          <figcaption>
+            Tarjeta lista para perforar ({symbols().length} empresas × {criteria.length}{" "}
+            {criteria.length === 1 ? "criterio" : "criterios"}): apretá «Evaluar» para contrastar cada celda con los datos
+            fundamentales.
+          </figcaption>
+        </figure>
+      )}
+
       {rows && rows.some((r) => r.results.length > 0) && (
         <figure className="card art-band">
           <PunchCard

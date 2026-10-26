@@ -13,7 +13,17 @@ const H = 220;
 const LEFT = 20;
 const RIGHT = 760;
 
-export default function Fan({ blades, years = 5, label }: { blades: Blade[]; years?: number; label: string }) {
+export default function Fan({
+  blades,
+  years = 5,
+  label,
+  latent = false,
+}: {
+  blades: Blade[];
+  years?: number;
+  label: string;
+  latent?: boolean;
+}) {
   if (blades.length === 0) return null;
   const finals = blades.map((b) => (1 + b.rate) ** years);
   const hi = Math.max(1.02, ...finals);
@@ -26,7 +36,7 @@ export default function Fan({ blades, years = 5, label }: { blades: Blade[]; yea
   });
 
   return (
-    <svg className="fan" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
+    <svg className={`fan${latent ? " latent" : ""}`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
       <line className="fan-base" x1={LEFT} x2={RIGHT} y1={y(1)} y2={y(1)} />
       {order.map(({ b, f, ly }) => {
         let d = "";

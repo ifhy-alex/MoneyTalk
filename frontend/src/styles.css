@@ -146,13 +146,21 @@ code { font-family: var(--font-num); font-size: 0.85em; background: var(--surfac
   border-right: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 11px; padding: 0 10px 20px; }
-/* Moneda: el colón como marca, tinta sobre dorado. */
+/* Moneda: el colón como marca, tinta sobre dorado, con cicloide guilloché de fondo. */
 .brand-mark {
+  position: relative; overflow: hidden;
   width: 34px; height: 34px; border-radius: 50%; flex: none;
   display: grid; place-items: center;
   background: var(--gold); color: #13201b;
   border: 2px solid color-mix(in srgb, #13201b 22%, var(--gold));
   font-family: var(--font-display); font-weight: 650; font-size: 1.05rem; line-height: 1;
+}
+.brand-mark > span { position: relative; z-index: 1; }
+.brand-guilloche {
+  position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+}
+.brand-guilloche path {
+  fill: none; stroke: #13201b; stroke-width: 0.7; opacity: 0.28;
 }
 .brand-name { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 560; letter-spacing: -0.015em; line-height: 1.1; }
 .brand-sub { font-size: var(--fs-xs); color: var(--side-muted); }
@@ -662,11 +670,15 @@ a.btn:active { transform: scale(0.97); }
 }
 .rosette.done .rosette-ring { stroke: var(--gold); stroke-width: 1.3; }
 .rosette-pct { font-family: var(--font-display); font-size: 21px; font-weight: 600; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.rosette-pct.mini { font-size: 36px; }
 .rosette-unit { font-size: 11px; fill: var(--muted); }
 @keyframes engrave { from { stroke-dashoffset: var(--len); } }
 .goal-card { display: flex; gap: 22px; align-items: flex-start; }
 .goal-card .goal-body { flex: 1; min-width: 0; }
 .goal-card .goal-body h2 { margin: 0; }
+.dash-goal { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.dash-goal:last-child { margin-bottom: 0; }
+.dash-goal-body { flex: 1; min-width: 0; }
 
 /* Presupuesto: ondas de tensión. */
 .tension { display: block; width: 100%; height: 26px; overflow: visible; }
@@ -753,15 +765,20 @@ main:has(> .welcome) { max-width: none; }
 .punch-hole { fill: var(--accent); }
 .punch-miss { fill: none; stroke: var(--muted); stroke-width: 1.2; }
 .punch-none { stroke: var(--muted); stroke-width: 1.4; opacity: 0.6; }
+.punch-latent { fill: none; stroke: var(--muted); stroke-width: 0.9; stroke-dasharray: 2 2; opacity: 0.55; }
+.punch.latent .punch-row text { fill: var(--muted); font-weight: 400; }
 
 /* Reportes: rosa de los vientos. */
 .compass { display: block; width: 100%; max-width: 400px; height: auto; margin: 0 auto; }
 .compass-guide { fill: none; stroke: var(--line); stroke-dasharray: 1 4; }
 .compass-zero { fill: none; stroke: var(--muted); stroke-dasharray: 3 3; }
 .compass-shape { fill: var(--accent); fill-opacity: 0.1; stroke: var(--ink-2); stroke-width: 1; }
+.compass.latent .compass-shape { fill-opacity: 0.04; stroke: var(--muted); stroke-dasharray: 2 3; }
 .compass-spoke line { stroke-width: 2; stroke-linecap: round; }
 .compass-spoke.up line, .compass-spoke.up circle { stroke: var(--pos); fill: var(--pos); }
 .compass-spoke.down line, .compass-spoke.down circle { stroke: var(--neg); fill: var(--neg); }
+.compass-spoke.latent line { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 3; }
+.compass-spoke.latent circle { fill: var(--muted); opacity: 0.5; }
 .compass-spoke text { font-size: 10px; fill: var(--muted); }
 .report-art { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 18px 28px; align-items: center; }
 @media (max-width: 760px) { .report-art { grid-template-columns: 1fr; } }
@@ -774,4 +791,88 @@ main:has(> .welcome) { max-width: none; }
 .fan g.blade:first-of-type .blade-line, .fan g.blade:first-of-type .blade-echo { stroke: var(--accent); }
 .fan g.blade:first-of-type .blade-line { stroke-width: 2.2; }
 .blade.down .blade-line, .blade.down .blade-echo { stroke: var(--neg); }
+.fan.latent .blade-line { stroke-dasharray: 4 4; opacity: 0.7; }
+.fan.latent .blade-echo { opacity: 0.15; }
 .fan text { font-size: 13px; fill: var(--ink); }
+
+/* Portafolio: rueda de custodia guilloché. */
+.custody-ring { display: block; width: 100%; max-width: 380px; height: auto; margin: 0 auto; }
+.custody-ring.compact { max-width: 210px; }
+.custody-guide { fill: none; stroke: var(--line); stroke-dasharray: 2 4; }
+.custody-border { fill: none; stroke: var(--line); stroke-width: 0.8; }
+.custody-wave { fill: none; stroke-width: 1.05; stroke-linecap: round; }
+.custody-slice.up .custody-wave { stroke: var(--pos); }
+.custody-slice.down .custody-wave { stroke: var(--neg); }
+.custody-slice.lead .custody-wave { stroke: var(--accent); }
+.custody-slice.ink .custody-wave { stroke: var(--ink-2); }
+.custody-slice.alt .custody-wave { stroke: var(--gold); }
+.custody-label { font-size: 10.5px; font-weight: 700; fill: var(--ink); }
+.custody-pct { font-weight: 400; fill: var(--muted); }
+.custody-center-top { font-family: var(--font-display); font-size: 13px; font-weight: 700; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.custody-center-sub { font-size: 10px; fill: var(--muted); }
+.alloc-list { list-style: none; padding: 0; margin: 10px 0 0; border-top: 1px solid var(--line-soft); }
+.alloc-list li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--line-soft); }
+.alloc-list li:last-child { border-bottom: 0; }
+
+/* Backtesting: tapiz de cosechas y reflejo de caída. */
+.tapestry { display: block; width: 100%; height: auto; }
+.tapestry-waterline { stroke: var(--ink-2); stroke-width: 1.1; }
+.tapestry-axis-lbl { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.tapestry-year { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.tapestry-bar { fill: var(--surface-2); stroke-width: 1.2; }
+.tapestry-hatch { stroke-width: 0.9; opacity: 0.55; }
+.tapestry-col.up .tapestry-bar, .tapestry-col.up .tapestry-hatch { stroke: var(--pos); }
+.tapestry-col.down .tapestry-bar, .tapestry-col.down .tapestry-hatch { stroke: var(--neg); }
+.tapestry-spy { stroke: var(--gold); stroke-width: 1.6; }
+.tapestry-spy-dot { fill: var(--gold); }
+.tapestry-dd-fill { fill: var(--neg); fill-opacity: 0.08; }
+.tapestry-dd-line { fill: none; stroke: var(--neg); stroke-width: 1.3; }
+.tapestry-dd-echo { fill: none; stroke: var(--neg); stroke-width: 0.7; opacity: 0.28; }
+.tapestry-dd-bench { fill: none; stroke: var(--muted); stroke-width: 1.1; stroke-dasharray: 3 3; }
+.tapestry-col-latent rect { fill: none; stroke: var(--line); stroke-dasharray: 3 3; }
+.tapestry-col-latent line { stroke: var(--line); stroke-dasharray: 2 3; }
+.tapestry-col-latent text { font-size: 11px; fill: var(--muted); opacity: 0.7; }
+.tapestry-watermark { font-size: 13px; fill: var(--muted); }
+
+/* Resumen: sello bimetálico CRC ↔ USD. */
+.bimetallic { display: block; width: 100%; max-width: 380px; height: auto; margin: 6px auto 0; }
+.bimet-axis { stroke: var(--line); stroke-width: 1.4; stroke-dasharray: 4 3; }
+.bimet-fulcrum { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+.bimet-ring { fill: none; stroke-width: 1; }
+.bimet-coin.crc .bimet-ring { stroke: var(--accent); }
+.bimet-coin.usd .bimet-ring { stroke: var(--gold); }
+.bimet-coin.empty .bimet-ring { stroke: var(--line); stroke-dasharray: 2 3; }
+.bimet-sym { font-family: var(--font-display); font-size: 18px; font-weight: 700; fill: var(--ink); }
+.bimet-pct { font-size: 11px; fill: var(--ink-2); font-variant-numeric: tabular-nums; }
+.bimet-caption { font-size: 11.5px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Presupuesto: diapasón mensual. */
+.budget-harp { display: block; width: 100%; height: auto; }
+.harp-limit { stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.harp-cal { stroke: var(--gold); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.harp-cal-dot { fill: var(--gold); }
+.harp-cal-lbl { font-size: 11px; fill: var(--gold-ink); font-weight: 700; }
+.harp-name { font-size: 12px; fill: var(--ink-2); }
+.harp-pct { font-size: 12px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.harp-rest { stroke: var(--line); stroke-width: 1; }
+.harp-ink { fill: none; stroke-width: 1.4; }
+.harp-echo { fill: none; stroke-width: 0.7; opacity: 0.35; }
+.harp-row.ok .harp-ink, .harp-row.ok .harp-echo { stroke: var(--accent); }
+.harp-row.ok .harp-peg { fill: var(--accent); }
+.harp-row.warn .harp-ink, .harp-row.warn .harp-echo { stroke: var(--gold); }
+.harp-row.warn .harp-peg { fill: var(--gold); }
+.harp-row.bad .harp-ink, .harp-row.bad .harp-echo { stroke: var(--neg); }
+.harp-row.bad .harp-peg { fill: var(--neg); }
+.harp-row.bad .harp-pct { fill: var(--neg); font-weight: 700; }
+
+/* Panel de instrumento: regla vernier de 52 semanas. */
+.range-ruler { display: block; width: 100%; height: auto; margin: 4px 0 8px; }
+.ruler-rail { stroke: var(--ink-2); stroke-width: 1; }
+.ruler-tick { stroke: var(--line); stroke-width: 1; }
+.ruler-tick.major { stroke: var(--muted); stroke-width: 1.2; }
+.ruler-band-3m { fill: var(--accent); fill-opacity: 0.14; stroke: var(--accent); stroke-width: 0.8; stroke-dasharray: 2 2; }
+.ruler-vol-echo line { stroke: var(--gold); stroke-width: 1; }
+.ruler-cursor.up { fill: var(--pos); stroke: var(--surface); stroke-width: 1.2; }
+.ruler-cursor.down { fill: var(--neg); stroke: var(--surface); stroke-width: 1.2; }
+.ruler-lbl { font-size: 10.5px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.ruler-now { font-size: 11px; font-weight: 700; fill: var(--ink); font-variant-numeric: tabular-nums; }
