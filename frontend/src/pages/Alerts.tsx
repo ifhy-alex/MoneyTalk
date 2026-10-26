@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { api } from "../api";
+import Seismograph from "../art/Seismograph";
+import { currentPeriod, periodLabel } from "../components/PeriodPicker";
 import { ErrorNotice } from "../components/ui";
 import { money } from "../format";
 import { useApi } from "../hooks";
-import type { Alert, Preferences } from "../types-finance";
+import type { Alert, Dashboard, Preferences } from "../types-finance";
 import Help from "../components/Help";
 
 const KIND_LABEL: Record<string, string> = {
@@ -51,6 +53,17 @@ export default function Alerts() {
   const [error, setError] = useState<string>();
 
   useEffect(() => setPrefs(prefsRes.data), [prefsRes.data]);
+
+  const month = useApi<Dashboard>(`/dashboard?period=${currentPeriod("month")}`, { retryOn: [409] });
+  // Día local (Costa Rica) en que se detectó cada alerta; created_at viene en UTC.
+  const alertDays = useMemo(
+    () =>
+      (alerts.data ?? []).map((a) => {
+        const d = new Date(a.created_at);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      }),
+    [alerts.data],
+  );
 
   async function run(fn: () => Promise<string | void>) {
     setError(undefined);
@@ -101,6 +114,19 @@ export default function Alerts() {
           </button>
         </div>
       </div>
+      {month.data && month.data.daily.length > 0 && (
+        <figure className="art-band">
+          <Seismograph
+            days={month.data.daily.map((d) => ({ date: d.date, spend: Number(d.expenses) }))}
+            marks={alertDays}
+            label={`Sismógrafo del gasto de ${periodLabel(month.data.period).toLowerCase()}`}
+          />
+          <figcaption>
+            El gasto de cada día de {periodLabel(month.data.period).toLowerCase()} como un sismógrafo: cuanto más se
+            gastó, más fuerte el temblor. Las franjas doradas son días en que MoneyTalk detectó algo para revisar.
+          </figcaption>
+        </figure>
+      )}
       {message && <div className="notice info">{message}</div>}
       <ErrorNotice error={error} />
 

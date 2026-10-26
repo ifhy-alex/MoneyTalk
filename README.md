@@ -37,7 +37,14 @@ visual: el grabado de un billete.
 - **Metas:** cada meta tiene su roseta guilloché; se graba anillo por anillo con lo ahorrado y
   se vuelve dorada al cumplirse.
 - **Presupuesto:** líneas que se tensan al acercarse al tope y se vuelven bermellón al pasarlo.
-- **Mercado y Portafolio:** relieves de líneas con las series de precios.
+- **Mercado, Portafolio y Backtesting:** relieves de líneas con las series de precios.
+- **Transacciones:** el mes como código de barras, un trazo por movimiento.
+- **Alertas:** un sismógrafo del gasto diario con los días de alerta marcados.
+- **Ingesta:** un sello grabado por cada documento recibido, del color de su estado.
+- **Reglas:** un hilorama que une cada regla con su categoría.
+- **Screener:** una tarjeta perforada con los criterios que cumple cada empresa.
+- **Reportes:** una rosa de los vientos con cuánto creció o cayó cada métrica en el año.
+- **Comparador:** un abanico con el crecimiento de cada opción desde el mismo monto.
 
 El arte nunca reemplaza una cifra: los montos exactos siguen al lado. Con «reducir movimiento»
 activado en el sistema, todo se dibuja quieto.

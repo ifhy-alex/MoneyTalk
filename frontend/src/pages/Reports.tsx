@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { api } from "../api";
+import Compass from "../art/Compass";
 import { Disclaimer, ErrorNotice } from "../components/ui";
 import { num, pct } from "../format";
 import Help from "../components/Help";
@@ -96,6 +97,36 @@ export default function Reports() {
               <div className="notice info small">Configurá ANTHROPIC_API_KEY para obtener la explicación en español.</div>
             )
           )}
+          {(() => {
+            const moves = report.table.filter((r) => r.yoy !== null).sort((a, b) => b.yoy! - a.yoy!);
+            if (moves.length < 3) return null;
+            const best = moves[0]!, worst = moves[moves.length - 1]!;
+            return (
+              <figure className="card report-art">
+                <Compass
+                  spokes={report.table.map((r) => ({ label: r.label, change: r.yoy }))}
+                  label={`Rosa de los vientos del trimestre de ${report.symbol}`}
+                />
+                <figcaption>
+                  <h2>El trimestre de un vistazo</h2>
+                  <p className="small">
+                    Un rayo por métrica. El anillo punteado es «igual que hace un año»: el rayo sale hacia afuera si la
+                    métrica creció y se mete hacia el centro si cayó. Pasá el mouse por un punto para ver cuál es.
+                  </p>
+                  <p className="small">
+                    Lo que más creció: <b>{best.label}</b> <span className="pos">{pct(best.yoy, 0)}</span>.{" "}
+                    {worst.yoy! < 0 ? (
+                      <>
+                        Lo que más cayó: <b>{worst.label}</b> <span className="neg">{pct(worst.yoy, 0)}</span>.
+                      </>
+                    ) : (
+                      <>Ninguna métrica cayó frente a hace un año.</>
+                    )}
+                  </p>
+                </figcaption>
+              </figure>
+            );
+          })()}
           <div className="card table-wrap">
             <h2>Cifras (USD)</h2>
             <table>

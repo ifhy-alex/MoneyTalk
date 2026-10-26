@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { api } from "../api";
+import Fan from "../art/Fan";
 import { Disclaimer, ErrorNotice } from "../components/ui";
 import { money, pct } from "../format";
 import { useApi } from "../hooks";
@@ -247,6 +248,20 @@ export default function Comparator() {
           </button>
         </div>
       </div>
+
+      {result && result.rows.length > 0 && (
+        <figure className="card art-band">
+          <Fan
+            years={Math.max(1, Number(params.months) / 12)}
+            blades={result.rows.map((r) => ({ label: r.name, rate: Number(r.net_annual_yield_base) }))}
+            label="Abanico de rendimientos de las opciones comparadas"
+          />
+          <figcaption>
+            Todas salen del mismo monto y crecen a su rendimiento neto anual durante {params.months} meses, ya en la moneda
+            base. La más alta, en verde, es la que más rinde; una que cae bajo la línea punteada pierde plata.
+          </figcaption>
+        </figure>
+      )}
 
       {result && (
         <div className="card table-wrap">

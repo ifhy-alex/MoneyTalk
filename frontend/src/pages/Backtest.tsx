@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { api } from "../api";
+import Ridgeline from "../art/Ridgeline";
 import { CHART, Disclaimer, ErrorNotice } from "../components/ui";
 import { num, pct } from "../format";
 import Help from "../components/Help";
@@ -170,6 +171,25 @@ export default function Backtest() {
               ))}
             </ul>
           </div>
+
+          {result.curve.length > 1 && (
+            <figure className="ridge-band">
+              <Ridgeline
+                height={130}
+                sort={false}
+                ridges={[
+                  { label: "Índice (SPY)", values: result.curve.map((p) => p.benchmark) },
+                  { label: "Universo a partes iguales", values: result.curve.map((p) => p.universe) },
+                  { label: "Estrategia", values: result.curve.map((p) => p.strategy) },
+                ]}
+                label="Relieve de la estrategia frente al universo y al índice"
+              />
+              <figcaption>
+                De atrás hacia adelante: el índice, el universo a partes iguales y tu estrategia. Cada cresta tiene su propia
+                escala para comparar la forma del recorrido; los valores exactos están en el resumen.
+              </figcaption>
+            </figure>
+          )}
 
           <div className="card table-wrap">
             <h2>Resumen</h2>

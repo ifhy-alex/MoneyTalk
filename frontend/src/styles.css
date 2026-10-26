@@ -1,18 +1,18 @@
-@import "@fontsource-variable/fraunces";
-@import "@fontsource-variable/instrument-sans";
 
 /*
   MoneyTalk — sistema visual "libro mayor".
   Papel salvia frío (como el fondo de un billete), tinta verde casi negra, esmeralda para lo que suma,
   bermellón apagado para lo que resta y dorado solo para el tipo de cambio. Las cifras son el protagonista:
-  Fraunces con el símbolo de moneda y los decimales subordinados; todo lo demás se queda quieto.
+  Verdana con el símbolo de moneda y los decimales subordinados; todo lo demás se queda quieto.
   Escala tipográfica (base 15px): 12 · 13 · 15 · 17 · 20 · 24 · 28 · 32.
 */
 
 /* ─────────────────────────  Tokens  ───────────────────────── */
 :root {
-  --font-display: "Fraunces Variable", Georgia, serif;
-  --font-body: "Instrument Sans Variable", system-ui, sans-serif;
+  /* Verdana: letra ancha y cuadriculada, legible en tamaños chicos; viene con Windows y macOS.
+     Solo tiene normal (400) y negrita (700): los pesos intermedios caen en uno de los dos. */
+  --font-display: Verdana, Tahoma, "DejaVu Sans", "Segoe UI", sans-serif;
+  --font-body: Verdana, Tahoma, "DejaVu Sans", "Segoe UI", sans-serif;
   /* Cifras en columnas: el mismo texto con cifras tabulares (Instrument Sans las tiene reales). */
   --font-num: var(--font-body);
 
@@ -113,10 +113,10 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--ink); text-wrap: bal
 h1 {
   font-size: clamp(1.6rem, 1.2rem + 0.6vw, var(--fs-3xl));
   font-weight: 520; line-height: 1.1; letter-spacing: -0.02em;
-  margin: 0 0 6px; font-variation-settings: "opsz" 72;
+  margin: 0 0 6px;
 }
-h2 { font-size: var(--fs-xl); font-weight: 560; line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 14px; font-variation-settings: "opsz" 30; }
-h3 { font-size: var(--fs-lg); font-weight: 600; margin: 0 0 8px; font-variation-settings: "opsz" 24; }
+h2 { font-size: var(--fs-xl); font-weight: 560; line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 14px; }
+h3 { font-size: var(--fs-lg); font-weight: 600; margin: 0 0 8px; }
 code { font-family: var(--font-num); font-size: 0.85em; background: var(--surface-2); padding: 1px 6px; border-radius: 4px; }
 .muted { color: var(--muted); }
 .small { font-size: var(--fs-sm); }
@@ -245,28 +245,32 @@ a.tick:focus-visible { outline-offset: -2px; }
   dejan 1px entre sí, así las divisiones quedan bien sin importar cuántas columnas quepan.
 */
 .grid-4:has(> .stat) {
+  /* 4 en fila o 2×2: nunca 3 + 1, que deja una celda huérfana y un hueco. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px; background: var(--line);
   border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
 }
 .grid-4 > .stat {
   border: 0; border-radius: 0; margin: 0;
 }
+@media (max-width: 1180px) {
+  .grid-4:has(> .stat) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .stat { padding: 18px 22px 20px; }
 .stat .label { color: var(--muted); font-size: var(--fs-sm); font-weight: 600; }
 .stat .value {
-  font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 450; line-height: 1.1; margin-top: 8px;
-  font-variant-numeric: lining-nums tabular-nums; letter-spacing: -0.03em; font-variation-settings: "opsz" 144;
+  font-family: var(--font-display); font-size: var(--fs-3xl); font-weight: 400; line-height: 1.1; margin-top: 8px;
+  font-variant-numeric: lining-nums tabular-nums; letter-spacing: -0.03em;
   overflow-wrap: anywhere;
 }
 .stat .hint { margin-top: 6px; line-height: 1.4; }
-/* La cifra que responde la pregunta de la pantalla manda. */
-.stat.lead .value { font-size: var(--fs-4xl); }
+/* Todas las cifras del mismo tamaño: Neto se distingue solo por el color. */
 
 /* Cifra tipográfica: símbolo y decimales subordinados al entero. */
 .fig { white-space: nowrap; }
-.fig-sym { font-size: 0.56em; font-weight: 500; vertical-align: 0.62em; margin-right: 0.08em; letter-spacing: 0; opacity: 0.72; }
+.fig-sym { margin-right: 0.12em; letter-spacing: 0; opacity: 0.72; }
 .fig-code { font-family: var(--font-body); font-size: max(11px, 0.45em); font-weight: 600; letter-spacing: 0.02em; vertical-align: 0.9em; margin-right: 0.3em; opacity: 0.72; }
-.fig-dec { font-size: 0.6em; letter-spacing: 0; opacity: 0.72; }
+.fig-dec { letter-spacing: 0; opacity: 0.6; }
 .fig-sign { margin-right: 0.04em; }
 
 /* ─────────────────────────  Tablas  ───────────────────────── */
@@ -338,7 +342,7 @@ input[type="file"]::file-selector-button {
   font: inherit; font-weight: 560; margin-right: 10px; padding: 4px 10px;
   border: 1px solid var(--line); border-radius: 5px; background: var(--surface-2); color: var(--ink); cursor: pointer;
 }
-label.field { display: flex; flex-direction: column; gap: 5px; font-size: var(--fs-sm); color: var(--ink-2); font-weight: 560; }
+label.field { display: flex; flex-direction: column; gap: 5px; font-size: var(--fs-sm); color: var(--ink-2); font-weight: 400; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .row.end { align-items: flex-end; }
 .spacer { flex: 1; }
@@ -406,9 +410,9 @@ label.field { display: flex; flex-direction: column; gap: 5px; font-size: var(--
 
 /* ─────────────────────────  Mercado  ───────────────────────── */
 .section-title { display: flex; align-items: baseline; gap: 14px; margin: 32px 0 14px; }
-.section-title h2 { margin: 0; font-size: var(--fs-2xl); font-weight: 480; font-variation-settings: "opsz" 72; letter-spacing: -0.02em; }
+.section-title h2 { margin: 0; font-size: var(--fs-2xl); font-weight: 480; letter-spacing: -0.02em; }
 .section-title .line { flex: 1; height: 1px; background: var(--line); }
-.inst-last { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 450; font-variant-numeric: lining-nums tabular-nums; letter-spacing: -0.03em; font-variation-settings: "opsz" 96; }
+.inst-last { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 450; font-variant-numeric: lining-nums tabular-nums; letter-spacing: -0.03em; }
 /* Panorama: una tabla por grupo, una fila por instrumento; la fila abre su gráfico. */
 .mkt { min-width: 760px; }
 .mkt th { font-weight: 600; }
@@ -467,7 +471,7 @@ label.field { display: flex; flex-direction: column; gap: 5px; font-size: var(--
   display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
   margin-bottom: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--line);
 }
-.drawer-head h2 { font-size: var(--fs-2xl); font-weight: 480; margin: 0; font-variation-settings: "opsz" 72; }
+.drawer-head h2 { font-size: var(--fs-2xl); font-weight: 480; margin: 0; }
 .drawer .nav { width: 36px; height: 36px; padding: 0; flex: none; }
 .drawer-lead { font-size: var(--fs-lg); color: var(--ink-2); line-height: 1.5; }
 .drawer h3 { margin: 24px 0 8px; }
@@ -541,7 +545,6 @@ label.btn:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
   .period-picker select { flex: 1; }
   main { padding: 22px 16px 48px; }
   h1 { font-size: var(--fs-2xl); }
-  .stat.lead .value { font-size: var(--fs-3xl); }
   .page-head { margin-bottom: 18px; padding-bottom: 16px; }
   .card { padding: 16px; }
   .stat { padding: 14px 16px 16px; }
@@ -565,7 +568,7 @@ label.btn:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
   padding: 10px 0; border-bottom: 1px solid var(--line-soft);
 }
 .rank li:last-child { border-bottom: 0; }
-.rank-name { font-weight: 560; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-name { font-weight: 400; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rank-val { font-variant-numeric: tabular-nums; text-align: right; }
 .rank-share { font-variant-numeric: tabular-nums; text-align: right; color: var(--muted); font-size: var(--fs-sm); }
 .rank-bar { grid-column: 1 / -1; height: 3px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
@@ -617,9 +620,8 @@ a.btn:active { transform: scale(0.97); }
 }
 .welcome-copy { align-self: end; padding-bottom: 32px; max-width: 980px; }
 .welcome h1 {
-  font-size: clamp(2.8rem, 1rem + 6.4vw, 7.25rem);
-  line-height: 0.92; letter-spacing: -0.035em; font-weight: 600;
-  font-variation-settings: "opsz" 144, "SOFT" 30;
+  font-size: clamp(2.3rem, 0.9rem + 4.6vw, 5.2rem);
+  line-height: 1; letter-spacing: -0.055em; font-weight: 700;
   margin: 0 0 20px; max-width: 12ch;
 }
 .welcome-lede { font-size: clamp(1.07rem, 0.95rem + 0.4vw, 1.27rem); color: var(--ink-2); max-width: 44ch; margin: 0; }
@@ -634,8 +636,7 @@ a.btn:active { transform: scale(0.97); }
 .welcome-figures dt { color: var(--muted); font-size: var(--fs-sm); margin-top: 4px; }
 .welcome-figures dd {
   margin: 0; font-family: var(--font-display); font-size: clamp(1.5rem, 1rem + 1.6vw, 2.4rem);
-  font-weight: 560; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
-  font-variation-settings: "opsz" 72; overflow-wrap: anywhere;
+  font-weight: 560; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
 }
 .welcome-figures dd.neg { color: var(--neg); }
 .welcome-legend { margin: 16px 0 0; font-size: var(--fs-sm); color: var(--muted); max-width: 80ch; }
@@ -691,11 +692,86 @@ main:has(> .welcome) { max-width: none; }
   .welcome { margin: -22px -16px -48px; padding: 0 16px 22px; min-height: calc(100svh - 41px); }
 }
 @media (max-width: 760px) {
-  .welcome-figures { grid-template-columns: 1fr 1fr; }
-  .welcome-figures div:first-child { grid-column: 1 / -1; }
+  /* Una por fila: con Verdana una categoría larga no entra en media columna sin partirse. */
+  .welcome-figures { grid-template-columns: 1fr; gap: 12px; }
   .goal-card { flex-direction: column; align-items: center; }
   .goal-card .goal-body { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rosette-ring { animation: none; }
 }
+
+/* ── Más piezas de la misma familia ── */
+.art-band { margin: -4px 0 20px; }
+.art-band figcaption { font-size: var(--fs-xs); color: var(--muted); margin-top: 6px; max-width: 90ch; }
+.art-band svg { display: block; width: 100%; }
+.art-band svg path, .art-band svg line { vector-effect: non-scaling-stroke; }
+
+/* Transacciones: código de barras. */
+.barcode { height: 90px; }
+.barcode line { stroke-width: 2.2; stroke-linecap: round; }
+.barcode-axis { stroke: var(--line); }
+.bar-in { stroke: var(--accent); }
+.bar-out { stroke: var(--ink-2); opacity: 0.85; }
+.bar-pending { stroke: var(--gold); }
+
+/* Alertas: sismógrafo. */
+.seismo { height: 110px; }
+.seismo-axis { stroke: var(--line); }
+.seismo-trace { fill: none; stroke: var(--ink-2); stroke-width: 1.1; stroke-linejoin: round; }
+.seismo-event { fill: var(--gold); opacity: 0.14; }
+.seismo-mark { stroke: var(--gold); stroke-width: 3; stroke-linecap: round; }
+
+/* Ingesta: mosaico de sellos. */
+.seal-wall { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 8px; }
+.seal { flex: none; }
+.seal path { fill: none; }
+.seal-edge { stroke-width: 1.4; }
+.seal-ring { stroke-width: 0.8; }
+.seal.ok path { stroke: var(--accent); }
+.seal.bad path { stroke: var(--neg); }
+.seal.warn path { stroke: var(--gold); }
+.seal.muted path { stroke: var(--muted); opacity: 0.6; }
+
+/* Reglas: hilorama. */
+.strings { display: block; width: 100%; height: auto; }
+.strings .thread path { fill: none; stroke: var(--accent); stroke-width: 0.9; opacity: 0.45; }
+.strings .thread circle { fill: var(--ink-2); }
+.strings .thread.off path { stroke: var(--muted); stroke-dasharray: 3 4; opacity: 0.4; }
+.strings .thread:hover path { opacity: 1; stroke-width: 1.8; }
+.strings-cat circle { fill: var(--accent); }
+.strings-cat text { font-size: 12px; fill: var(--ink); }
+/* En pantallas chicas el SVG se reduce a menos de la mitad: el texto se compensa. */
+@media (max-width: 760px) { .strings-cat text { font-size: 20px; } }
+.strings-count { fill: var(--muted); }
+
+/* Screener: tarjeta perforada. */
+.punch { display: block; width: 100%; height: auto; }
+.punch-card { fill: var(--surface); stroke: var(--line); stroke-dasharray: 4 4; }
+.punch-row text { font-size: 12px; font-weight: 700; fill: var(--ink-2); }
+.punch-row.pass text { fill: var(--accent); }
+.punch-hole { fill: var(--accent); }
+.punch-miss { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+.punch-none { stroke: var(--muted); stroke-width: 1.4; opacity: 0.6; }
+
+/* Reportes: rosa de los vientos. */
+.compass { display: block; width: 100%; max-width: 400px; height: auto; margin: 0 auto; }
+.compass-guide { fill: none; stroke: var(--line); stroke-dasharray: 1 4; }
+.compass-zero { fill: none; stroke: var(--muted); stroke-dasharray: 3 3; }
+.compass-shape { fill: var(--accent); fill-opacity: 0.1; stroke: var(--ink-2); stroke-width: 1; }
+.compass-spoke line { stroke-width: 2; stroke-linecap: round; }
+.compass-spoke.up line, .compass-spoke.up circle { stroke: var(--pos); fill: var(--pos); }
+.compass-spoke.down line, .compass-spoke.down circle { stroke: var(--neg); fill: var(--neg); }
+.compass-spoke text { font-size: 10px; fill: var(--muted); }
+.report-art { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 18px 28px; align-items: center; }
+@media (max-width: 760px) { .report-art { grid-template-columns: 1fr; } }
+
+/* Comparador: abanico. */
+.fan { display: block; width: 100%; height: auto; }
+.fan-base { stroke: var(--line); stroke-dasharray: 4 4; }
+.blade-line { fill: none; stroke: var(--ink-2); stroke-width: 1.4; }
+.blade-echo { fill: none; stroke: var(--ink-2); stroke-width: 0.7; opacity: 0.3; }
+.fan g.blade:first-of-type .blade-line, .fan g.blade:first-of-type .blade-echo { stroke: var(--accent); }
+.fan g.blade:first-of-type .blade-line { stroke-width: 2.2; }
+.blade.down .blade-line, .blade.down .blade-echo { stroke: var(--neg); }
+.fan text { font-size: 13px; fill: var(--ink); }
