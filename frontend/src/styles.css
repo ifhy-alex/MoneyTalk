@@ -586,3 +586,116 @@ label.btn:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
 @media (max-width: 640px) {
   .mkt .name .asof { display: none; }
 }
+
+/* ─────────────────────────  Arte generativo  ─────────────────────────
+   Una sola familia: grabado de billete con los datos reales. Protagonista en Inicio y Metas,
+   acento en Resumen, Presupuesto, Mercado y Portafolio. Nunca reemplaza una cifra. */
+a.btn { display: inline-flex; align-items: center; text-decoration: none; }
+a.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+@media (hover: hover) and (pointer: fine) {
+  a.btn.primary:hover { background: color-mix(in srgb, var(--accent) 86%, var(--ink)); }
+}
+a.btn:active { transform: scale(0.97); }
+
+.flowfield { position: absolute; inset: 0; overflow: hidden; }
+.flowfield canvas { display: block; width: 100%; height: 100%; }
+
+/* Inicio: el mes real a sangre completa dentro del área de contenido. */
+.welcome {
+  position: relative; isolation: isolate; overflow: hidden;
+  margin: -30px -40px -64px;
+  min-height: calc(100svh - 41px);
+  display: grid; grid-template-rows: 1fr auto auto;
+  padding: 0 40px 28px;
+}
+.welcome .flowfield { z-index: -2; }
+.welcome::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(110% 80% at 0% 100%, color-mix(in srgb, var(--paper) 88%, transparent) 0%, transparent 65%),
+    linear-gradient(to top, color-mix(in srgb, var(--paper) 92%, transparent) 0%, transparent 38%);
+}
+.welcome-copy { align-self: end; padding-bottom: 32px; max-width: 980px; }
+.welcome h1 {
+  font-size: clamp(2.8rem, 1rem + 6.4vw, 7.25rem);
+  line-height: 0.92; letter-spacing: -0.035em; font-weight: 600;
+  font-variation-settings: "opsz" 144, "SOFT" 30;
+  margin: 0 0 20px; max-width: 12ch;
+}
+.welcome-lede { font-size: clamp(1.07rem, 0.95rem + 0.4vw, 1.27rem); color: var(--ink-2); max-width: 44ch; margin: 0; }
+.welcome-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 26px; }
+.welcome-actions .btn { min-height: 46px; padding: 0 22px; font-size: var(--fs-md); border-radius: 999px; }
+.welcome-actions a:not(.btn) { font-weight: 600; }
+.welcome-figures {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 32px;
+  margin: 0; padding-top: 18px; border-top: 1px solid var(--line);
+}
+.welcome-figures div { display: flex; flex-direction: column-reverse; min-width: 0; }
+.welcome-figures dt { color: var(--muted); font-size: var(--fs-sm); margin-top: 4px; }
+.welcome-figures dd {
+  margin: 0; font-family: var(--font-display); font-size: clamp(1.5rem, 1rem + 1.6vw, 2.4rem);
+  font-weight: 560; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  font-variation-settings: "opsz" 72; overflow-wrap: anywhere;
+}
+.welcome-figures dd.neg { color: var(--neg); }
+.welcome-legend { margin: 16px 0 0; font-size: var(--fs-sm); color: var(--muted); max-width: 80ch; }
+.key { white-space: nowrap; }
+.key::before { content: ""; display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin: 0 5px 3px 2px; vertical-align: middle; background: var(--muted); }
+.key.income::before { background: var(--accent); }
+.key.top::before { background: var(--gold); }
+
+/* Resumen: franja con el campo de flujo del periodo. */
+.period-art { position: relative; height: 128px; margin: -4px 0 20px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+.period-art figcaption {
+  position: absolute; left: 14px; bottom: 10px; right: 14px; font-size: var(--fs-xs); color: var(--muted);
+  text-shadow: 0 0 6px var(--surface), 0 0 2px var(--surface);
+}
+
+/* Metas: roseta guilloché. */
+.rosette { display: block; flex: none; }
+.rosette-guide { fill: none; stroke: var(--muted); stroke-opacity: 0.45; stroke-width: 0.9; stroke-linecap: round; stroke-dasharray: 0.0015 0.006; }
+.rosette-ring {
+  fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-linecap: round;
+  stroke-dasharray: var(--len) 1; stroke-dashoffset: 0;
+  animation: engrave 1.3s var(--ease-out) both;
+}
+.rosette.done .rosette-ring { stroke: var(--gold); stroke-width: 1.3; }
+.rosette-pct { font-family: var(--font-display); font-size: 21px; font-weight: 600; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.rosette-unit { font-size: 11px; fill: var(--muted); }
+@keyframes engrave { from { stroke-dashoffset: var(--len); } }
+.goal-card { display: flex; gap: 22px; align-items: flex-start; }
+.goal-card .goal-body { flex: 1; min-width: 0; }
+.goal-card .goal-body h2 { margin: 0; }
+
+/* Presupuesto: ondas de tensión. */
+.tension { display: block; width: 100%; height: 26px; overflow: visible; }
+.tension path { fill: none; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.tension-rest { stroke: var(--line); }
+.tension.ok .tension-ink { stroke: var(--accent); }
+.tension.warn .tension-ink { stroke: var(--gold); }
+.tension.bad .tension-ink { stroke: var(--neg); }
+
+/* Mercado y portafolio: relieve grabado. */
+.ridge-band { position: relative; margin: -4px 0 22px; }
+.ridge-band figcaption { font-size: var(--fs-xs); color: var(--muted); margin-top: 6px; }
+.ridgeline { display: block; width: 100%; }
+.ridgeline path { vector-effect: non-scaling-stroke; }
+.ridge-mask { fill: var(--paper); }
+.ridge-line { fill: none; stroke-width: 1.3; }
+.ridge-echo { fill: none; stroke-width: 0.8; }
+.ridgeline .up .ridge-line, .ridgeline .up .ridge-echo { stroke: var(--pos); }
+.ridgeline .down .ridge-line, .ridgeline .down .ridge-echo { stroke: var(--neg); }
+
+main:has(> .welcome) { max-width: none; }
+@media (max-width: 860px) {
+  .welcome { margin: -22px -16px -48px; padding: 0 16px 22px; min-height: calc(100svh - 41px); }
+}
+@media (max-width: 760px) {
+  .welcome-figures { grid-template-columns: 1fr 1fr; }
+  .welcome-figures div:first-child { grid-column: 1 / -1; }
+  .goal-card { flex-direction: column; align-items: center; }
+  .goal-card .goal-body { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rosette-ring { animation: none; }
+}

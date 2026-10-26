@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 import httpx
@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from moneytalk.config import Settings
 from moneytalk.investments.providers import ProviderError, make_provider
 from moneytalk.investments.providers.http_providers import AlphaVantageProvider, FmpProvider
-from moneytalk.jobs import job_alerts
+from moneytalk.jobs import job_alerts, today_cr
 from moneytalk.models import Alert
 from moneytalk.notifications.telegram import TelegramNotifier
 from tests import factories as f
@@ -103,8 +103,11 @@ def test_scheduler_registers_jobs() -> None:
 
 
 def test_job_alerts_notifies_once(db: Session) -> None:
-    f.rate(db, date(2026, 6, 1))
-    f.txn(db, date(2026, 10, 14), "-12.99", "NETFLIX", "USD", category_name="Suscripciones")
+    settings = Settings(app_timezone="America/Costa_Rica")
+    # job_alerts mira los últimos 7 días desde hoy: la fecha tiene que ser relativa.
+    yesterday = today_cr(settings) - timedelta(days=1)
+    f.rate(db, yesterday - timedelta(days=30))
+    f.txn(db, yesterday, "-12.99", "NETFLIX", "USD", category_name="Suscripciones")
     sent: list[dict[str, Any]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -115,7 +118,6 @@ def test_job_alerts_notifies_once(db: Session) -> None:
         Settings(telegram_bot_token="t", telegram_chat_id="1"),
         http=httpx.Client(transport=httpx.MockTransport(handler)),
     )
-    settings = Settings(app_timezone="America/Costa_Rica")
     created = job_alerts(db, settings, notifier)
     assert created and len(sent) == len(created)
     job_alerts(db, settings, notifier)

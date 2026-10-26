@@ -45,6 +45,10 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:5173"]
 
+    # Modo escritorio (ejecutable): la API también sirve el frontend compilado.
+    desktop_mode: bool = False
+    static_dir: Path | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

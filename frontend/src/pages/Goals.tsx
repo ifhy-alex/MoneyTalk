@@ -1,8 +1,9 @@
 import { useState } from "react";
 
 import { api } from "../api";
-import { ErrorNotice, Progress } from "../components/ui";
-import { money, pct } from "../format";
+import Rosette from "../art/Rosette";
+import { ErrorNotice } from "../components/ui";
+import { money } from "../format";
 import { useApi } from "../hooks";
 import type { Goal } from "../types-finance";
 import Help from "../components/Help";
@@ -137,6 +138,7 @@ export default function Goals() {
 
       {goals.data?.length === 0 && (
         <div className="card empty-block">
+          <Rosette seed="fondo-de-emergencia" ratio={0} size={128} emergency label="Fondo de emergencia sin empezar" />
           <h2>Todavía no tenés metas</h2>
           <p>
             Empezá por el fondo de emergencia: plata líquida para imprevistos (perder el trabajo, una emergencia médica).
@@ -170,9 +172,11 @@ export default function Goals() {
 
       <div className="grid grid-2">
         {goals.data?.map((g) => (
-          <div className="card" key={g.id}>
+          <div className="card goal-card" key={g.id}>
+            <Rosette seed={`${g.id}:${g.name}`} ratio={g.ratio} emergency={g.is_emergency_fund} label={g.name} />
+            <div className="goal-body">
             <div className="row">
-              <h2 style={{ margin: 0 }}>{g.name}</h2>
+              <h2>{g.name}</h2>
               {g.is_emergency_fund && <span className="badge ok">Prioritaria</span>}
               <span className="spacer" />
               <button className="link small" onClick={() => run(() => api.del(`/goals/${g.id}`))}>
@@ -180,9 +184,10 @@ export default function Goals() {
               </button>
             </div>
             <p className="small muted" style={{ margin: "6px 0" }}>
-              {money(g.saved, g.currency)} de {money(g.target_amount, g.currency)} · {pct(g.ratio, 0)}
+              {g.ratio >= 1
+                ? `Meta cumplida: ${money(g.saved, g.currency)} ahorrados.`
+                : `${money(g.saved, g.currency)} de ${money(g.target_amount, g.currency)}. Cada anillo grabado es un 10 % del camino.`}
             </p>
-            <Progress ratio={g.ratio} />
             <p className="small">
               {g.months_to_target !== null && <>Con el aporte actual llegás en {g.months_to_target} meses. </>}
               {g.required_monthly && <>Para la fecha objetivo necesitás {money(g.required_monthly, g.currency)}/mes.</>}
@@ -205,6 +210,7 @@ export default function Goals() {
               >
                 Registrar
               </button>
+            </div>
             </div>
           </div>
         ))}

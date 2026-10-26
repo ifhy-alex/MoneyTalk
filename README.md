@@ -26,6 +26,25 @@ para cualquiera.
 
 Cada sección tiene un botón **?** que explica qué es, cómo se calcula y qué significa cada dato.
 
+### El arte de la app
+
+Varias pantallas tienen arte generativo dibujado con tus propios datos, todo en la misma familia
+visual: el grabado de un billete.
+
+- **Inicio:** tu mes como un campo de flujo. Cada línea cruza el mes de izquierda a derecha,
+  sube los días en que entró más de lo que salió y se agita con los gastos fuertes.
+- **Resumen:** el mismo campo, en una franja, para el mes o año que estés viendo.
+- **Metas:** cada meta tiene su roseta guilloché; se graba anillo por anillo con lo ahorrado y
+  se vuelve dorada al cumplirse.
+- **Presupuesto:** líneas que se tensan al acercarse al tope y se vuelven bermellón al pasarlo.
+- **Mercado y Portafolio:** relieves de líneas con las series de precios.
+
+El arte nunca reemplaza una cifra: los montos exactos siguen al lado. Con «reducir movimiento»
+activado en el sistema, todo se dibuja quieto.
+
+> `landing/index.html` es otra cosa: una página web de presentación, independiente de la app
+> y con datos simulados, para mostrar MoneyTalk antes de descargarla.
+
 ## Privacidad
 
 - **Todo corre en tu computadora.** Tu información queda en una base de datos local; no hay
@@ -37,7 +56,37 @@ Cada sección tiene un botón **?** que explica qué es, cómo se calcula y qué
   IBAN (quedan solo los últimos 4 dígitos), los teléfonos de SINPE y tu nombre.
 - Las contraseñas y llaves van únicamente en el archivo `.env`, que nunca se sube a git.
 
-## Instalación
+## App de escritorio (Windows)
+
+La forma más fácil de usar MoneyTalk, y la que sirve para compartirla con familia y amigos:
+no hace falta Docker, Python ni nada más.
+
+**Para usarla:** corré `MoneyTalk-Setup.exe` (instala sin pedir permisos de administrador y
+crea los accesos directos), o descomprimí `MoneyTalk-windows.zip` y abrí `MoneyTalk.exe`. Al
+abrirla arrancan solos la base de datos, la API y las tareas programadas; al cerrar la ventana
+se apagan todos.
+
+- **Tus datos** quedan en `%LOCALAPPDATA%\MoneyTalk` (base de datos, PDFs, token de Gmail y
+  registros). Actualizar o borrar la app no los toca; para empezar de cero, borrá esa carpeta.
+- **Carpeta de entrada:** los PDF que dejés en `%LOCALAPPDATA%\MoneyTalk\data\inbox` se
+  importan solos. En Ingesta hay un botón para abrirla.
+- **Configuración opcional** (llave de Claude, BCCR, Telegram): editá
+  `%LOCALAPPDATA%\MoneyTalk\.env` y volvé a abrir la app.
+- La primera vez Windows SmartScreen puede avisar que la app no está firmada:
+  «Más información» → «Ejecutar de todas formas».
+
+**Para construirla** (en Windows, con [uv](https://docs.astral.sh/uv/) y Node 22):
+
+```bash
+powershell -ExecutionPolicy Bypass -File desktop\build.ps1
+```
+
+Deja la app en `dist\MoneyTalk\`, el zip en `dist\MoneyTalk-windows.zip` y, si tenés
+[Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`), el
+instalador en `dist\MoneyTalk-Setup.exe`. Para probar sin empaquetar: `uv run --group desktop python -m
+moneytalk.desktop` dentro de `backend/` (después de `npm run build` en `frontend/`).
+
+## Instalación con Docker (para desarrollo)
 
 ### 1. Requisitos
 

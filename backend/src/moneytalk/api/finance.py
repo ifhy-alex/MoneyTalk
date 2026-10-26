@@ -45,7 +45,11 @@ def _fx(db: Session) -> FxConverter:
     if not fx.has_rates:
         raise HTTPException(
             status_code=409,
-            detail="No hay tipo de cambio cargado. Configurá BCCR_TOKEN y corré la sincronización.",
+            # La sincronización corre sola al arrancar (BCCR o, sin token, el mercado).
+            detail=(
+                "Todavía no hay tipo de cambio: se descarga solo al abrir la app y necesita "
+                "internet. Esperá unos segundos y recargá."
+            ),
         )
     return fx
 

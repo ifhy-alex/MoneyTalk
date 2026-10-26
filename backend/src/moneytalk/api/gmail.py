@@ -1,11 +1,12 @@
 """Conexión de Gmail desde la interfaz (OAuth con PKCE, permiso de solo lectura)."""
 
 import logging
+import webbrowser
 from typing import Annotated, Any
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 
 from moneytalk.config import get_settings
@@ -71,8 +72,15 @@ async def upload_credentials(file: Annotated[UploadFile, File()]) -> None:
     path.write_bytes(raw)
 
 
+_DESKTOP_DONE = """<!doctype html><meta charset="utf-8"><title>MoneyTalk</title>
+<body style="font:16px system-ui;display:grid;place-items:center;height:90vh;text-align:center">
+<div><h1 style="font-size:22px">{title}</h1>
+<p>Ya podés cerrar esta pestaña y volver a MoneyTalk.</p></div>
+"""
+
+
 @router.get("/connect")
-def connect(origin: Annotated[str, Query()]) -> dict[str, str]:
+def connect(origin: Annotated[str, Query()]) -> dict[str, str | bool]:
     """Inicia OAuth. `origin` es la URL del frontend (el callback pasa por su proxy /api)."""
     parsed = urlparse(origin)
     if parsed.scheme != "http" or parsed.hostname not in _LOCAL_HOSTS:
@@ -84,11 +92,29 @@ def connect(origin: Annotated[str, Query()]) -> dict[str, str]:
     url, state, flow = start_web_flow(s.gmail_credentials_file, f"{base}/api/gmail/callback")
     _PENDING.clear()  # solo una autorización en curso
     _PENDING[state] = (flow, base)
+    if s.desktop_mode:
+        # La ventana embebida no sirve para iniciar sesión en Google: navegador del sistema.
+        webbrowser.open(url)
+        return {"auth_url": url, "external": True}
     return {"auth_url": url}
 
 
-@router.get("/callback")
-def callback(state: str, code: str | None = None, error: str | None = None) -> RedirectResponse:
+@router.get("/callback", response_model=None)
+def callback(
+    state: str, code: str | None = None, error: str | None = None
+) -> RedirectResponse | HTMLResponse:
+    result, base = _finish(state, code, error)
+    if get_settings().desktop_mode:
+        # El callback llega al navegador del sistema, no a la ventana de la app.
+        title = {
+            "conectado": "Gmail quedó conectado",
+            "cancelado": "Autorización cancelada",
+        }.get(result, "Google rechazó la autorización")
+        return HTMLResponse(_DESKTOP_DONE.format(title=title))
+    return RedirectResponse(f"{base}/ingesta?gmail={result}")
+
+
+def _finish(state: str, code: str | None, error: str | None) -> tuple[str, str]:
     pending = _PENDING.pop(state, None)
     if pending is None:
         raise HTTPException(
@@ -96,13 +122,13 @@ def callback(state: str, code: str | None = None, error: str | None = None) -> R
         )
     flow, base = pending
     if error or not code:
-        return RedirectResponse(f"{base}/ingesta?gmail=cancelado")
+        return "cancelado", base
     try:
         finish_web_flow(flow, code, get_settings().gmail_token_file)
     except Exception as exc:
         log.warning("OAuth de Gmail falló: %s", type(exc).__name__)
-        return RedirectResponse(f"{base}/ingesta?gmail=error")
-    return RedirectResponse(f"{base}/ingesta?gmail=conectado")
+        return "error", base
+    return "conectado", base
 
 
 @router.post("/disconnect", status_code=204)

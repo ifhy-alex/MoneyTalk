@@ -26,3 +26,7 @@ Thumbs.db
 .DS_Store
 *.tsbuildinfo
 .taste-skill/
+
+# Builds de escritorio
+/dist/
+/build/

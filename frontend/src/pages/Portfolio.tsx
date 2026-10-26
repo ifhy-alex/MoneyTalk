@@ -4,6 +4,7 @@ import { CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, Responsive
 import { api } from "../api";
 import { CHART, Disclaimer, ErrorNotice, Stat } from "../components/ui";
 import { money, num, pct } from "../format";
+import Ridgeline from "../art/Ridgeline";
 import { useApi } from "../hooks";
 import Help from "../components/Help";
 
@@ -138,6 +139,24 @@ export default function Portfolio() {
           <div className="muted">Registro manual de posiciones; precios del proveedor configurado (con caché).</div>
         </div>
       </div>
+      {bench.data && bench.data.series.length > 1 && (
+        <figure className="ridge-band">
+          <Ridgeline
+            height={130}
+            sort={false}
+            ridges={[
+              { label: "Invertido", values: bench.data.series.map((p) => Number(p.invested)) },
+              { label: bench.data.benchmark, values: bench.data.series.map((p) => Number(p.benchmark)) },
+              { label: "Portafolio", values: bench.data.series.map((p) => Number(p.portfolio)) },
+            ]}
+            label={`Relieve de tu portafolio frente a ${bench.data.benchmark} y lo invertido`}
+          />
+          <figcaption>
+            De atrás hacia adelante: lo que invertiste, {bench.data.benchmark} con esas mismas compras y tu portafolio.
+            Cada cresta tiene su propia escala; los montos exactos están en el gráfico de abajo.
+          </figcaption>
+        </figure>
+      )}
       <Disclaimer />
       <ErrorNotice error={error ?? port.error} />
       {port.data?.warnings.map((w) => (

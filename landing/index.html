@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MoneyTalk</title>
+<meta name="description" content="MoneyTalk ordena los movimientos de tu banco y te muestra en qué se va tu dinero. Todo queda en tu computadora.">
+<meta name="theme-color" content="#0B1426" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#EAF0EE" media="(prefers-color-scheme: light)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0B1426;
+    --green: #00C896;
+    --gold: #F5B841;
+    --bg: #0B1426;
+    --ink: #E9EEF6;
+    --ink-soft: #A9B6CA;
+    --rule: rgba(233, 238, 246, 0.16);
+    --scrim: rgba(11, 20, 38, 0.78);
+    --btn-ink: #062018;
+    /* Colores del campo de flujo, leídos desde JS. */
+    --f-income: #00C896;
+    --f-top: #F5B841;
+    --f-rest: #5E7AA8;
+    --f-fade: 11, 20, 38;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #EAF0EE;
+      --ink: #0B1426;
+      --ink-soft: #46546B;
+      --rule: rgba(11, 20, 38, 0.16);
+      --scrim: rgba(234, 240, 238, 0.82);
+      --f-income: #009E77;
+      --f-top: #D4920F;
+      --f-rest: #8497B8;
+      --f-fade: 234, 240, 238;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #EAF0EE;
+    --ink: #0B1426;
+    --ink-soft: #46546B;
+    --rule: rgba(11, 20, 38, 0.16);
+    --scrim: rgba(234, 240, 238, 0.82);
+    --f-income: #009E77;
+    --f-top: #D4920F;
+    --f-rest: #8497B8;
+    --f-fade: 234, 240, 238;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 1rem/1.55 "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a, button { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 4px; }
+
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  #field { position: absolute; inset: 0; z-index: -2; }
+  #field canvas { display: block; }
+  /* Velo que deja leer el texto sin tapar el arte. */
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(120% 90% at 0% 100%, var(--scrim) 0%, transparent 62%),
+      linear-gradient(to top, var(--scrim) 0%, transparent 34%);
+    pointer-events: none;
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px clamp(16px, 4vw, 56px);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font: 700 1.125rem/1 "Bricolage Grotesque", system-ui, sans-serif;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .brand svg { width: 28px; height: 28px; }
+  .controls { display: flex; align-items: center; gap: 8px; }
+
+  .months {
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: blur(6px);
+  }
+  .months button {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    font: 500 0.875rem/1 "Instrument Sans", system-ui, sans-serif;
+    cursor: pointer;
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+  .months button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .theme {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .theme svg { width: 18px; height: 18px; }
+
+  .copy {
+    align-self: end;
+    padding: 0 clamp(16px, 4vw, 56px) clamp(28px, 5vh, 56px);
+    max-width: 1100px;
+  }
+  h1 {
+    margin: 0;
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-weight: 800;
+    font-variation-settings: "wdth" 82, "opsz" 96;
+    font-size: clamp(3rem, 10.5vw, 8.75rem);
+    line-height: 0.88;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+  }
+  .lede {
+    margin: 22px 0 0;
+    max-width: 36ch;
+    font-size: clamp(1.0625rem, 1.6vw, 1.25rem);
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 52px;
+    margin-top: 28px;
+    padding: 0 30px;
+    border-radius: 999px;
+    background: var(--green);
+    color: var(--btn-ink);
+    font: 600 1.0625rem/1 "Instrument Sans", system-ui, sans-serif;
+    text-decoration: none;
+    transition: transform 160ms cubic-bezier(.2, .8, .2, 1), background-color 160ms ease;
+  }
+  .cta:hover { background: #12DBA8; }
+  .cta:active { transform: scale(0.97); }
+
+  .figures {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 clamp(16px, 3vw, 40px);
+    margin: 0;
+    padding: 20px clamp(16px, 4vw, 56px) 28px;
+    border-top: 1px solid var(--rule);
+  }
+  .figures div { min-width: 0; }
+  .figures dt {
+    order: 2;
+    margin-top: 4px;
+    font-size: 0.9375rem;
+    color: var(--ink-soft);
+  }
+  .figures div { display: flex; flex-direction: column; }
+  .figures dd {
+    order: 1;
+    margin: 0;
+    font: 700 clamp(1.5rem, 3.2vw, 2.5rem)/1.05 "Bricolage Grotesque", system-ui, sans-serif;
+    font-variation-settings: "wdth" 90, "opsz" 48;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .figures .neg { color: var(--f-top); }
+  .legend {
+    margin: 10px 0 0;
+    max-width: 52ch;
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+  }
+  .legend i {
+    display: inline-block;
+    width: 10px;
+    height: 3px;
+    margin: 0 4px 3px 2px;
+    border-radius: 2px;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 640px) {
+    .brand span { display: none; }
+    .figures { grid-template-columns: 1fr 1fr; row-gap: 18px; }
+    .figures div:first-child { grid-column: 1 / -1; }
+    .lede { margin-top: 16px; }
+    .cta { margin-top: 22px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cta, .months button { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main class="hero">
+  <div id="field" aria-hidden="true"></div>
+
+  <header class="bar">
+    <a class="brand" href="#" aria-label="MoneyTalk, inicio">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="#0B1426"/>
+        <path d="M6 22l5-4.5 4 2.5 5-7 6-4" fill="none" stroke="#00C896" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="26" cy="9" r="3" fill="#F5B841"/>
+      </svg>
+      <span>MoneyTalk</span>
+    </a>
+    <div class="controls">
+      <div class="months" role="group" aria-label="Mes que dibuja el fondo" id="months"></div>
+      <button class="theme" id="theme" type="button" aria-label="Cambiar entre modo claro y oscuro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="copy">
+    <h1>Tu dinero tiene algo que decir</h1>
+    <p class="lede">MoneyTalk lee los movimientos de tu banco, los ordena por categoría y te muestra en qué se va cada colón. Todo queda en tu computadora.</p>
+    <a class="cta" href="https://github.com/ifhy-alex/MoneyTalk/releases/latest">Empezar</a>
+    <p class="legend" id="legend"></p>
+  </section>
+
+  <dl class="figures" aria-live="polite">
+    <div><dt id="saveLabel">Ahorro del mes</dt><dd id="save">—</dd></div>
+    <div><dt id="topLabel">Categoría con más gasto</dt><dd id="top">—</dd></div>
+    <div><dt>Gasto promedio por día</dt><dd id="daily">—</dd></div>
+  </dl>
+</main>
+
+<!-- Reemplazá este bloque por tus datos reales (mismo formato): un objeto por día con
+     sus ingresos y sus gastos por categoría, en colones. El fondo y las cifras se
+     calculan solos a partir de aquí. -->
+<script type="application/json" id="moneytalk-data">
+{
+  "moneda": "CRC",
+  "meses": [
+    { "mes": "Septiembre", "dias": [
+      {"fecha":"2026-09-01","ingresos":0,"gastos":{"Transporte":4200}},
+      {"fecha":"2026-09-02","ingresos":0,"gastos":{"Transporte":2500}},
+      {"fecha":"2026-09-03","ingresos":0,"gastos":{"Transporte":6200}},
+      {"fecha":"2026-09-04","ingresos":0,"gastos":{"Transporte":4200,"Ocio":6400}},
+      {"fecha":"2026-09-05","ingresos":0,"gastos":{"Transporte":2200,"Restaurantes":12500,"Servicios":68200,"Ocio":8500}},
+      {"fecha":"2026-09-06","ingresos":0,"gastos":{"Supermercado":46700,"Salud":27700}},
+      {"fecha":"2026-09-07","ingresos":0,"gastos":{"Supermercado":27600,"Transporte":1600,"Restaurantes":6400}},
+      {"fecha":"2026-09-08","ingresos":0,"gastos":{"Transporte":6000}},
+      {"fecha":"2026-09-09","ingresos":60000,"gastos":{"Transporte":2300}},
+      {"fecha":"2026-09-10","ingresos":0,"gastos":{"Transporte":5400}},
+      {"fecha":"2026-09-11","ingresos":0,"gastos":{"Transporte":3900,"Ocio":18800,"Salud":27600}},
+      {"fecha":"2026-09-12","ingresos":0,"gastos":{"Transporte":4300,"Restaurantes":6300,"Suscripciones":9800,"Ocio":11000}},
+      {"fecha":"2026-09-13","ingresos":0,"gastos":{}},
+      {"fecha":"2026-09-14","ingresos":0,"gastos":{"Supermercado":37900,"Transporte":3700}},
+      {"fecha":"2026-09-15","ingresos":432500,"gastos":{"Supermercado":16800,"Transporte":3900}},
+      {"fecha":"2026-09-16","ingresos":0,"gastos":{"Transporte":5200,"Restaurantes":11100}},
+      {"fecha":"2026-09-17","ingresos":0,"gastos":{"Transporte":4600}},
+      {"fecha":"2026-09-18","ingresos":0,"gastos":{"Transporte":3200,"Ocio":17400}},
+      {"fecha":"2026-09-19","ingresos":0,"gastos":{"Supermercado":22700,"Transporte":3000}},
+      {"fecha":"2026-09-20","ingresos":0,"gastos":{"Supermercado":31000}},
+      {"fecha":"2026-09-21","ingresos":0,"gastos":{"Transporte":6300}},
+      {"fecha":"2026-09-22","ingresos":0,"gastos":{"Transporte":2900,"Restaurantes":13700}},
+      {"fecha":"2026-09-23","ingresos":0,"gastos":{"Supermercado":18800,"Transporte":2100,"Restaurantes":5600}},
+      {"fecha":"2026-09-24","ingresos":0,"gastos":{"Supermercado":15900,"Transporte":1700,"Restaurantes":11600}},
+      {"fecha":"2026-09-25","ingresos":0,"gastos":{"Supermercado":45500,"Transporte":5700}},
+      {"fecha":"2026-09-26","ingresos":0,"gastos":{"Transporte":2900}},
+      {"fecha":"2026-09-27","ingresos":0,"gastos":{"Supermercado":40800}},
+      {"fecha":"2026-09-28","ingresos":0,"gastos":{"Transporte":3200}},
+      {"fecha":"2026-09-29","ingresos":0,"gastos":{"Supermercado":22500,"Transporte":4800}},
+      {"fecha":"2026-09-30","ingresos":432500,"gastos":{"Transporte":5600}}
+    ] },
+    { "mes": "Octubre", "dias": [
+      {"fecha":"2026-10-01","ingresos":0,"gastos":{"Transporte":3800}},
+      {"fecha":"2026-10-02","ingresos":0,"gastos":{"Supermercado":27900,"Transporte":2700,"Ocio":11000}},
+      {"fecha":"2026-10-03","ingresos":0,"gastos":{"Transporte":6400,"Restaurantes":11100}},
+      {"fecha":"2026-10-04","ingresos":0,"gastos":{}},
+      {"fecha":"2026-10-05","ingresos":0,"gastos":{"Transporte":6100,"Servicios":63300}},
+      {"fecha":"2026-10-06","ingresos":0,"gastos":{"Supermercado":26400,"Transporte":3900}},
+      {"fecha":"2026-10-07","ingresos":0,"gastos":{"Transporte":3600}},
+      {"fecha":"2026-10-08","ingresos":0,"gastos":{"Transporte":1700,"Restaurantes":23800}},
+      {"fecha":"2026-10-09","ingresos":0,"gastos":{"Transporte":5200,"Restaurantes":9300}},
+      {"fecha":"2026-10-10","ingresos":0,"gastos":{"Supermercado":35300,"Transporte":2100,"Ocio":21000}},
+      {"fecha":"2026-10-11","ingresos":0,"gastos":{"Restaurantes":16300}},
+      {"fecha":"2026-10-12","ingresos":0,"gastos":{"Transporte":3800,"Restaurantes":25700,"Suscripciones":9800}},
+      {"fecha":"2026-10-13","ingresos":0,"gastos":{"Transporte":2300}},
+      {"fecha":"2026-10-14","ingresos":0,"gastos":{"Transporte":5500}},
+      {"fecha":"2026-10-15","ingresos":432500,"gastos":{"Transporte":6500}},
+      {"fecha":"2026-10-16","ingresos":0,"gastos":{"Transporte":1700,"Ocio":21000}},
+      {"fecha":"2026-10-17","ingresos":0,"gastos":{"Transporte":4700,"Ocio":34500}},
+      {"fecha":"2026-10-18","ingresos":0,"gastos":{"Restaurantes":21100,"Hogar":189000}},
+      {"fecha":"2026-10-19","ingresos":0,"gastos":{"Transporte":3700}},
+      {"fecha":"2026-10-20","ingresos":0,"gastos":{"Supermercado":20100,"Transporte":5800,"Restaurantes":8500}},
+      {"fecha":"2026-10-21","ingresos":0,"gastos":{"Transporte":4800}},
+      {"fecha":"2026-10-22","ingresos":0,"gastos":{"Transporte":4200,"Salud":26600}},
+      {"fecha":"2026-10-23","ingresos":0,"gastos":{"Transporte":2600,"Ocio":22400}},
+      {"fecha":"2026-10-24","ingresos":0,"gastos":{"Transporte":2300,"Hogar":64000}},
+      {"fecha":"2026-10-25","ingresos":0,"gastos":{"Restaurantes":22300}},
+      {"fecha":"2026-10-26","ingresos":0,"gastos":{"Transporte":2500,"Restaurantes":16300}},
+      {"fecha":"2026-10-27","ingresos":0,"gastos":{"Transporte":6300}},
+      {"fecha":"2026-10-28","ingresos":0,"gastos":{"Transporte":5100}},
+      {"fecha":"2026-10-29","ingresos":0,"gastos":{"Transporte":5700}},
+      {"fecha":"2026-10-30","ingresos":0,"gastos":{"Transporte":1700,"Restaurantes":14200}},
+      {"fecha":"2026-10-31","ingresos":432500,"gastos":{"Transporte":2400,"Ocio":18900}}
+    ] }
+  ]
+}
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js" integrity="sha512-d6sc8kbZEtA2LwB9m/ck0FhvyUwVfdmvTeyJRprmj7Wg9wRFtHDIpr6qk4g/y3Ix3O9I6KHIv6SGu9f7RaP1Gw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+(() => {
+  const DATA = JSON.parse(document.getElementById("moneytalk-data").textContent);
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+  const money = new Intl.NumberFormat("es-CR", { style: "currency", currency: DATA.moneda || "CRC", maximumFractionDigits: 0 });
+
+  // ---------- Resumen de un mes ----------
+  function summarize(month) {
+    const days = month.dias;
+    const byCat = {};
+    let income = 0, spent = 0;
+    const net = [], spend = [];
+    for (const d of days) {
+      const g = Object.values(d.gastos || {}).reduce((a, b) => a + b, 0);
+      for (const [k, v] of Object.entries(d.gastos || {})) byCat[k] = (byCat[k] || 0) + v;
+      income += d.ingresos || 0;
+      spent += g;
+      net.push((d.ingresos || 0) - g);
+      spend.push(g);
+    }
+    const top = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0] || ["—", 0];
+    // Suavizado de ±3 días: la quincena no es un pico aislado sino un cambio de rumbo.
+    const smooth = (arr, r) => arr.map((_, i) => {
+      let s = 0, n = 0;
+      for (let j = Math.max(0, i - r); j <= Math.min(arr.length - 1, i + r); j++) { s += arr[j]; n++; }
+      return s / n;
+    });
+    const sn = smooth(net, 3), ss = smooth(spend, 2);
+    const maxNet = Math.max(1, ...sn.map(Math.abs));
+    const maxSpend = Math.max(1, ...ss);
+    const meanSpend = spent / days.length;
+    return {
+      name: month.mes,
+      income, spent, save: income - spent, top, daily: meanSpend,
+      tilt: sn.map((v) => v / maxNet),              // -1 gasta, +1 ahorra
+      pace: ss.map((v) => v / maxSpend),            // volumen relativo de gasto
+      jolt: spend.map((v) => Math.min(1.6, Math.abs(v - meanSpend) / (meanSpend || 1))), // turbulencia
+      incomeShare: income / Math.max(1, income + spent),
+      topShare: top[1] / Math.max(1, spent),
+      days: days.length,
+    };
+  }
+  const months = DATA.meses.map(summarize);
+  let current = months.length - 1;
+
+  // ---------- Cifras animadas ----------
+  const els = { save: document.getElementById("save"), saveLabel: document.getElementById("saveLabel"),
+    top: document.getElementById("top"), topLabel: document.getElementById("topLabel"),
+    daily: document.getElementById("daily"), legend: document.getElementById("legend") };
+  const counters = new Map();
+  function countTo(el, to, fmt) {
+    const from = counters.get(el) ?? 0;
+    counters.set(el, to);
+    if (reduceMotion.matches) { el.textContent = fmt(to); return; }
+    const t0 = performance.now(), dur = 900;
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = fmt(from + (to - from) * e);
+      if (k < 1 && counters.get(el) === to) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  function renderFigures() {
+    const m = months[current];
+    const month = m.name.toLowerCase();
+    els.saveLabel.textContent = m.save >= 0 ? `Ahorraste en ${month}` : `Gastaste de más en ${month}`;
+    els.save.classList.toggle("neg", m.save < 0);
+    countTo(els.save, Math.abs(m.save), (v) => money.format(Math.round(v)));
+    els.top.textContent = m.top[0];
+    els.topLabel.textContent = `Tu mayor gasto: ${money.format(m.top[1])}`;
+    countTo(els.daily, m.daily, (v) => money.format(Math.round(v)));
+    els.legend.innerHTML =
+      `El fondo es ${month}: cada línea cruza el mes de izquierda a derecha, sube cuando entró más de lo que salió y se agita con los gastos fuertes.<br>` +
+      `<i style="background:var(--f-income)"></i>ingresos <i style="background:var(--f-top)"></i>${m.top[0].toLowerCase()} <i style="background:var(--f-rest)"></i>lo demás.`;
+  }
+
+  // ---------- Selector de mes ----------
+  const group = document.getElementById("months");
+  months.forEach((m, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = m.name;
+    b.addEventListener("click", () => select(i));
+    group.append(b);
+  });
+  function select(i) {
+    current = i;
+    [...group.children].forEach((b, j) => b.setAttribute("aria-pressed", String(j === i)));
+    renderFigures();
+    field && field.retarget(months[i]);
+  }
+
+  // ---------- Tema ----------
+  const root = document.documentElement;
+  try { const t = localStorage.getItem("mt-theme"); if (t) root.dataset.theme = t; } catch (_) {}
+  document.getElementById("theme").addEventListener("click", () => {
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("mt-theme", root.dataset.theme); } catch (_) {}
+    field && field.repaint();
+  });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => field && field.repaint());
+
+  // ---------- Campo de flujo (p5) ----------
+  let field = null;
+  if (window.p5) {
+    new p5((p) => {
+      const host = document.getElementById("field");
+      let parts = [], cols = {}, target = null, shown = null, mix = 1, t = 0;
+      let running = true;
+
+      const css = (name) => getComputedStyle(root).getPropertyValue(name).trim();
+      const readColors = () => {
+        cols = { income: p.color(css("--f-income")), top: p.color(css("--f-top")), rest: p.color(css("--f-rest")),
+          fade: css("--f-fade").split(",").map(Number) };
+      };
+      const count = () => Math.round(Math.min(1100, (p.width * p.height) / 1300));
+      const pickKind = (m) => {
+        const r = Math.random();
+        return r < m.incomeShare * 0.9 ? "income" : r < m.incomeShare * 0.9 + m.topShare * 0.55 ? "top" : "rest";
+      };
+      const spawn = (o, m) => {
+        o.x = Math.random() * p.width;
+        o.y = Math.random() * p.height;
+        o.life = 60 + Math.random() * 160;
+        o.kind = pickKind(m);
+        return o;
+      };
+      // Interpola un arreglo por día en la posición horizontal x.
+      const at = (arr, x) => {
+        const f = Math.max(0, Math.min(arr.length - 1, (x / p.width) * (arr.length - 1)));
+        const i = Math.floor(f), k = f - i;
+        return arr[i] * (1 - k) + (arr[Math.min(arr.length - 1, i + 1)] ?? arr[i]) * k;
+      };
+      const sample = (m, x) => [at(m.tilt, x), at(m.pace, x), at(m.jolt, x)];
+      function flow(x, y) {
+        let [tilt, pace, jolt] = sample(target, x);
+        if (mix < 1 && shown) {
+          const [a, b, c] = sample(shown, x);
+          tilt = a + (tilt - a) * mix; pace = b + (pace - b) * mix; jolt = c + (jolt - c) * mix;
+        }
+        const n = p.noise(x * 0.0021, y * 0.0021, t);
+        const angle = -tilt * 0.85 + (n - 0.5) * Math.PI * (0.45 + jolt * 0.55);
+        const speed = 0.7 + pace * 2.1;
+        return [Math.cos(angle) * speed, Math.sin(angle) * speed];
+      }
+      function step(o) {
+        const [vx, vy] = flow(o.x, o.y);
+        const nx = o.x + vx, ny = o.y + vy;
+        p.stroke(cols[o.kind]);
+        p.line(o.x, o.y, nx, ny);
+        o.x = nx; o.y = ny; o.life--;
+        if (o.life < 0 || nx < -4 || nx > p.width + 4 || ny < -4 || ny > p.height + 4) spawn(o, target);
+      }
+      function clear() {
+        const [r, g, b] = cols.fade;
+        p.background(r, g, b);
+      }
+      function stillFrame() {
+        // Movimiento reducido: el mismo dibujo, quieto. Se acumulan trazos sin animar.
+        clear();
+        p.randomSeed(7); p.noiseSeed(7);
+        parts.forEach((o) => spawn(o, target));
+        for (let i = 0; i < 220; i++) parts.forEach(step);
+      }
+      function setAlpha() {
+        const dark = cols.fade[0] < 128;
+        ["income", "top", "rest"].forEach((k) => cols[k].setAlpha(k === "rest" ? (dark ? 70 : 90) : (dark ? 120 : 150)));
+      }
+
+      p.setup = () => {
+        const c = p.createCanvas(host.clientWidth, host.clientHeight);
+        c.parent(host);
+        p.pixelDensity(Math.min(2, window.devicePixelRatio || 1));
+        p.strokeWeight(p.width < 640 ? 1.3 : 1.1);
+        p.noiseSeed(20261025);
+        readColors(); setAlpha();
+        target = months[current];
+        parts = Array.from({ length: count() }, () => spawn({}, target));
+        clear();
+        if (reduceMotion.matches) { stillFrame(); p.noLoop(); }
+      };
+      p.draw = () => {
+        const [r, g, b] = cols.fade;
+        p.noStroke();
+        p.fill(r, g, b, 22);
+        p.rect(0, 0, p.width, p.height);
+        p.strokeWeight(p.width < 640 ? 1.3 : 1.1);
+        p.noFill();
+        if (mix < 1) mix = Math.min(1, mix + 0.012);
+        parts.forEach(step);
+        t += 0.0016;
+      };
+      p.windowResized = () => {
+        p.resizeCanvas(host.clientWidth, host.clientHeight);
+        parts = Array.from({ length: count() }, () => spawn({}, target));
+        clear();
+        if (reduceMotion.matches) stillFrame();
+      };
+
+      // Pausa cuando el hero no se ve o la pestaña está oculta: no gastar batería.
+      const sync = () => {
+        const want = running && !document.hidden && !reduceMotion.matches;
+        want ? p.loop() : p.noLoop();
+      };
+      new IntersectionObserver(([e]) => { running = e.isIntersecting; sync(); }).observe(host);
+      document.addEventListener("visibilitychange", sync);
+      reduceMotion.addEventListener("change", () => { sync(); if (reduceMotion.matches) stillFrame(); });
+
+      field = {
+        retarget(m) {
+          shown = target; target = m; mix = reduceMotion.matches ? 1 : 0;
+          parts.forEach((o) => { if (Math.random() < 0.5) o.kind = pickKind(m); });
+          if (reduceMotion.matches) stillFrame();
+        },
+        repaint() {
+          readColors(); setAlpha(); clear();
+          if (reduceMotion.matches) stillFrame();
+        },
+      };
+    });
+  }
+
+  select(current);
+})();
+</script>
+</body>
+</html>

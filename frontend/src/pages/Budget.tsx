@@ -1,7 +1,8 @@
 import { useState } from "react";
 
 import { api, type Category } from "../api";
-import { ErrorNotice, Progress } from "../components/ui";
+import TensionWave from "../art/TensionWave";
+import { ErrorNotice } from "../components/ui";
 import { currentMonth, money, pct } from "../format";
 import { useApi } from "../hooks";
 import type { BudgetStatus, Dashboard } from "../types-finance";
@@ -136,9 +137,9 @@ export default function Budget() {
                 <td>
                   <div className="row">
                     <div style={{ flex: 1 }}>
-                      <Progress ratio={b.ratio} />
+                      <TensionWave ratio={b.ratio} label={`${b.category}: ${pct(b.ratio, 0)} del presupuesto`} />
                     </div>
-                    <span className="small muted">{pct(b.ratio, 0)}</span>
+                    <span className={`small ${b.ratio >= 1 ? "neg" : "muted"}`}>{pct(b.ratio, 0)}</span>
                   </div>
                 </td>
                 <td>

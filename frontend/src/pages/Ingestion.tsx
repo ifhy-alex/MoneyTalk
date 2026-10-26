@@ -9,6 +9,7 @@ const STATUS_CLASS = { parsed: "ok", failed: "bad", ignored: "", pending: "warn"
 
 export default function Ingestion() {
   const docs = useApi<RawDocument[]>("/ingestion/documents");
+  const inbox = useApi<{ path: string; can_open: boolean }>("/ingestion/inbox");
   const [file, setFile] = useState<File | null>(null);
   const [password, setPassword] = useState("");
   const [result, setResult] = useState<IngestResult>();
@@ -66,8 +67,13 @@ export default function Ingestion() {
           <h2>Subir PDF de movimientos o estado de cuenta</h2>
           <p className="small muted">
             Funciona con el «Reporte de Movimientos» del Banco Popular y el estado de tarjeta de BAC. También podés guardar
-            los PDF en la carpeta <code>data/inbox</code> y se importan solos.
+            los PDF en la carpeta <code>{inbox.data?.path ?? "data/inbox"}</code> y se importan solos en unos minutos.
           </p>
+          {inbox.data?.can_open && (
+            <button className="link small" onClick={() => api.post("/ingestion/inbox/open").catch((e: Error) => setError(e.message))}>
+              Abrir la carpeta
+            </button>
+          )}
           <div className="row end">
             <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             <label className="field">

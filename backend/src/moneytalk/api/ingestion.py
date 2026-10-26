@@ -1,3 +1,4 @@
+import sys
 from datetime import date, datetime
 from typing import Annotated
 
@@ -46,12 +47,14 @@ def _out(result: service.IngestResult) -> IngestResultOut:
 
 
 @router.post("/pdf", response_model=IngestResultOut)
-async def upload_pdf(
+def upload_pdf(
     db: DB,
     file: Annotated[UploadFile, File()],
     password: Annotated[str | None, Form()] = None,
 ) -> IngestResultOut:
-    data = await file.read()
+    # Síncrono a propósito: parsear el PDF bloquea, así corre en el threadpool y no
+    # congela el resto de la API mientras importa.
+    data = file.file.read()
     try:
         result = service.ingest_pdf(
             db, data, file.filename or "", password=password, on_new=on_new_transaction
@@ -94,3 +97,28 @@ def reprocess_outdated(db: DB) -> IngestResultOut:
     for raw in service.outdated_documents(db):
         total.add(service.reprocess(db, raw, on_new=on_new_transaction))
     return _out(total)
+
+
+class InboxOut(BaseModel):
+    path: str
+    can_open: bool
+
+
+@router.get("/inbox", response_model=InboxOut)
+def inbox() -> InboxOut:
+    """Carpeta vigilada: los PDF que se dejen ahí se importan solos cada 2 minutos."""
+    s = get_settings()
+    return InboxOut(
+        path=str(s.inbox_dir.resolve()), can_open=s.desktop_mode and sys.platform == "win32"
+    )
+
+
+@router.post("/inbox/open", status_code=204)
+def open_inbox() -> None:
+    s = get_settings()
+    if not s.desktop_mode or sys.platform != "win32":
+        raise HTTPException(status_code=409, detail="Solo disponible en la app de escritorio")
+    import os
+
+    s.inbox_dir.mkdir(parents=True, exist_ok=True)
+    os.startfile(s.inbox_dir)  # noqa: S606  abre el Explorador de Windows

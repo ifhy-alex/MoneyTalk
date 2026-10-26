@@ -23,6 +23,11 @@ dependencies = [
 ]
 
 [dependency-groups]
+desktop = [
+    "pgserver>=0.1.4",
+    "pyinstaller>=6.22.3",
+    "pywebview>=6.2.1",
+]
 dev = [
     "pytest>=8.3",
     "pytest-cov>=6.0",
@@ -77,6 +82,8 @@ module = [
     "fitz.*",
     "pymupdf.*",
     "apscheduler.*",
+    "webview.*",
+    "pgserver.*",
 ]
 ignore_missing_imports = true
 
