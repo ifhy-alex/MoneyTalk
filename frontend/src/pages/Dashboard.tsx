@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Area,
@@ -17,6 +17,9 @@ import {
   YAxis,
 } from "recharts";
 
+import FlowField from "../art/FlowField";
+import TensionWave from "../art/TensionWave";
+import { shapeFromSummary } from "../art/core";
 import Help from "../components/Help";
 import PeriodPicker, { currentPeriod, periodLabel } from "../components/PeriodPicker";
 import { CHART, ErrorNotice, Progress, Stat } from "../components/ui";
@@ -48,8 +51,10 @@ function CardTitle({ title, topic, aside }: { title: string; topic: string; asid
 export default function Dashboard() {
   const [period, setPeriod] = useState(currentPeriod("month"));
   const [more, setMore] = useState(false);
-  const { data, error } = useApi<DashboardData>(`/dashboard?period=${period}`);
+  // 409 = todavía no hay tipo de cambio (la primera vez se descarga en segundo plano).
+  const { data, error } = useApi<DashboardData>(`/dashboard?period=${period}`, { retryOn: [409] });
   const isYear = period.length === 4;
+  const shape = useMemo(() => shapeFromSummary(data), [data]);
 
   const categories = data ? Object.entries(data.by_category).map(([name, value]) => ({ name, value: Number(value) })) : [];
   const trend =
@@ -100,6 +105,13 @@ export default function Dashboard() {
 
       {data && (
         <>
+          <figure className="period-art">
+            <FlowField shape={shape} bg="--surface" density={0.55} />
+            <figcaption>
+              {isYear ? `Tu ${period} dibujado mes a mes` : "Este mes dibujado día a día"}: las líneas suben cuando entró más
+              de lo que salió y se agitan con los gastos fuertes.
+            </figcaption>
+          </figure>
           {(data.pending_categorization > 0 || data.unread_alerts > 0) && (
             <div className="notice warn">
               {data.pending_categorization > 0 && (
@@ -299,7 +311,7 @@ export default function Dashboard() {
                       {money(b.spent, b.currency)} / {money(b.budgeted, b.currency)}
                     </span>
                   </div>
-                  <Progress ratio={b.ratio} />
+                  <TensionWave ratio={b.ratio} label={`${b.category}: ${pct(b.ratio, 0)} del presupuesto`} />
                 </div>
               ))}
             </div>

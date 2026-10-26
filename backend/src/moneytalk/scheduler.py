@@ -7,6 +7,7 @@ import logging
 from collections.abc import Callable
 from datetime import UTC, datetime
 
+from apscheduler.schedulers.base import BaseScheduler
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
@@ -40,10 +41,11 @@ def _run(name: str, fn: Callable[[Session, Settings], object]) -> Callable[[], N
     return wrapper
 
 
-def build_scheduler() -> BlockingScheduler:
+def build_scheduler(kind: type[BaseScheduler] = BlockingScheduler) -> BaseScheduler:
+    """`BlockingScheduler` para el proceso worker; `BackgroundScheduler` en el ejecutable."""
     settings = get_settings()
     tz = settings.app_timezone
-    sched = BlockingScheduler(timezone=tz)
+    sched = kind(timezone=tz)
     sched.add_job(
         _run("gmail+alertas", job_ingest_and_alert),
         IntervalTrigger(minutes=30),

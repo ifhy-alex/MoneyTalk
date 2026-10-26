@@ -2,6 +2,7 @@ import { Fragment, useState } from "react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { api } from "../api";
+import Ridgeline from "../art/Ridgeline";
 import ChartDrawer from "../components/ChartDrawer";
 import Help from "../components/Help";
 import { Disclaimer, ErrorNotice, Sparkline } from "../components/ui";
@@ -146,6 +147,19 @@ export default function Market() {
       <Disclaimer />
       <ErrorNotice error={error ?? refreshError} />
       {loading && !data && <p className="muted">Descargando datos de mercado…</p>}
+
+      {sectors && sectors.items.length > 0 && (
+        <figure className="ridge-band">
+          <Ridgeline
+            ridges={sectors.items.map((i) => ({ values: i.spark, label: i.name }))}
+            label="Relieve de los sectores del S&P 500 en los últimos tres meses"
+          />
+          <figcaption>
+            Los últimos tres meses de cada sector, apilados como un grabado: atrás el que peor le fue, adelante el mejor.
+            Verde si terminó más arriba de donde empezó, bermellón si terminó más abajo. Pasá el mouse para ver cuál es.
+          </figcaption>
+        </figure>
+      )}
 
       {data && (
         <div className="grid grid-2">

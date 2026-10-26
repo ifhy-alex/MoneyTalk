@@ -8,6 +8,7 @@ const svg = (children: ReactNode) => (
 );
 
 export const Icons = {
+  flow: svg(<path d="M3 8c3-3 6 3 9 0s6 3 9 0M3 13c3-3 6 3 9 0s6 3 9 0M3 18c3-3 6 3 9 0s6 3 9 0" />),
   close: svg(<path d="M6 6l12 12M18 6 6 18" />),
   check: svg(<path d="M5 12.5 10 17.5 19 7" />),
   cross: svg(<path d="M7 7l10 10M17 7 7 17" />),

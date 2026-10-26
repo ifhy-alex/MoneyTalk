@@ -16,6 +16,7 @@ import Reports from "./pages/Reports";
 import Rules from "./pages/Rules";
 import Screener from "./pages/Screener";
 import Transactions from "./pages/Transactions";
+import Welcome from "./pages/Welcome";
 
 interface NavItem {
   to: string;
@@ -28,6 +29,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
   {
     group: "Finanzas",
     items: [
+      { to: "/inicio", label: "Inicio", icon: Icons.flow, element: <Welcome /> },
       { to: "/resumen", label: "Resumen", icon: Icons.home, element: <Dashboard /> },
       { to: "/transacciones", label: "Transacciones", icon: Icons.list, element: <Transactions /> },
       { to: "/presupuesto", label: "Presupuesto", icon: Icons.wallet, element: <Budget /> },
@@ -88,7 +90,7 @@ export default function App() {
         <Ticker />
         <main id="contenido" tabIndex={-1}>
           <Routes>
-            <Route path="/" element={<Navigate to="/resumen" replace />} />
+            <Route path="/" element={<Navigate to="/inicio" replace />} />
             {NAV.flatMap((g) => g.items).map((i) => (
               <Route key={i.to} path={i.to} element={i.element} />
             ))}
