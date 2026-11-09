@@ -8,6 +8,9 @@ cómo vas con tu presupuesto y tus metas, y qué está pasando en los mercados. 
 para Costa Rica (colones y dólares, bancos locales, tipo de cambio del BCCR), pero sirve
 para cualquiera.
 
+**[⬇ Descargar MoneyTalk para Windows](https://github.com/ifhy-alex/MoneyTalk/releases/latest)**:
+bajá `MoneyTalk-Setup.exe` y abrilo. No hace falta instalar nada más.
+
 > ⚠️ **No es asesoría financiera.** Las secciones de inversiones muestran datos y señales
 > calculadas con criterios que vos definís, siempre con su evidencia. Nunca son
 > recomendaciones de compra o venta.
@@ -16,6 +19,7 @@ para cualquiera.
 
 | Sección | Para qué sirve |
 |---|---|
+| **Inicio** | Lo primero que ves al abrir: tu mes dibujado, cuánto ahorraste y en qué gastaste más |
 | **Resumen** | Ingresos, gastos y ahorro del mes o del año, gasto por categoría, evolución de 12 meses y ritmo de gasto |
 | **Transacciones** | Todos tus movimientos, sin duplicados; los clasificás con un clic y la app aprende reglas |
 | **Presupuesto y metas** | Topes mensuales por categoría y metas de ahorro (con el fondo de emergencia primero) |
@@ -23,6 +27,7 @@ para cualquiera.
 | **Mercado** | Índices, ETFs, empresas grandes, sectores, oro, petróleo y bitcoin, con tendencias y gráficos de hasta 5 años |
 | **Portafolio** | Tus inversiones, su rendimiento y la comparación contra el S&P 500 |
 | **Screener, reportes, comparador y backtesting** | Herramientas para analizar empresas, entender sus reportes trimestrales y comparar con CDP y fondos locales |
+| **Ingesta y reglas** | Importar estados de cuenta en PDF y correos de Gmail, y enseñarle a la app cómo clasificar cada comercio |
 
 Cada sección tiene un botón **?** que explica qué es, cómo se calcula y qué significa cada dato.
 
@@ -68,10 +73,15 @@ activado en el sistema, todo se dibuja quieto.
 La forma más fácil de usar MoneyTalk, y la que sirve para compartirla con familia y amigos:
 no hace falta Docker, Python ni nada más.
 
-**Para usarla:** corré `MoneyTalk-Setup.exe` (instala sin pedir permisos de administrador y
-crea los accesos directos), o descomprimí `MoneyTalk-windows.zip` y abrí `MoneyTalk.exe`. Al
-abrirla arrancan solos la base de datos, la API y las tareas programadas; al cerrar la ventana
-se apagan todos.
+**Para instalarla:** bajá `MoneyTalk-Setup.exe` de la
+[página de descargas](https://github.com/ifhy-alex/MoneyTalk/releases/latest) y abrilo. Instala
+sin pedir permisos de administrador y crea los accesos directos. Funciona en Windows 10 y 11 de
+64 bits. Al abrirla arrancan solos la base de datos, la API y las tareas programadas; al cerrar
+la ventana se apagan todos. La primera vez tarda unos segundos más, mientras prepara la base
+de datos.
+
+**Para actualizarla:** cerrá MoneyTalk, bajá el instalador nuevo y abrilo encima de la versión
+que tenés. No hace falta desinstalar nada y tus datos se conservan.
 
 - **Tus datos** quedan en `%LOCALAPPDATA%\MoneyTalk` (base de datos, PDFs, token de Gmail y
   registros). Actualizar o borrar la app no los toca; para empezar de cero, borrá esa carpeta.
@@ -146,8 +156,9 @@ línea de una persona, así que MoneyTalk usa tres caminos seguros:
 
 1. **Subir un PDF** (página **Ingesta**): el estado de cuenta o el reporte de movimientos que
    descargás de tu banco. Si está protegido, escribís la contraseña y no se guarda.
-2. **Carpeta de entrada:** guardá los PDF en `data/inbox/` y se importan solos en un par de
-   minutos.
+2. **Carpeta de entrada:** guardá los PDF ahí y se importan solos en un par de minutos. En la
+   app de escritorio es `%LOCALAPPDATA%\MoneyTalk\data\inbox` (en **Ingesta** hay un botón
+   «Abrir la carpeta»); con Docker, `data/inbox/` dentro del proyecto.
 3. **Gmail, automático:** activá en tu banco los avisos por correo de cada compra y
    conectá Gmail desde **Ingesta → Gmail**. La app busca los correos de los bancos de Costa
    Rica cada 30 minutos.
@@ -166,6 +177,12 @@ tenga permiso sobre tu correo.
 3. En **Credenciales → Crear credenciales → ID de cliente OAuth**, elegí **App de escritorio**
    y descargá el JSON.
 4. En MoneyTalk, **Ingesta → Gmail → Subir JSON del cliente** y después **Conectar Gmail**.
+   En la app de escritorio la autorización se abre en tu navegador (Google no permite iniciar
+   sesión dentro de la ventana de la app); cuando termines, la app lo detecta sola.
+
+Mientras el proyecto de Google esté en modo de prueba, **Google vence la autorización cada 7
+días**: cuando pase, volvé a tocar **Conectar Gmail**. El JSON del paso 3 sirve siempre; no hay
+que repetir los pasos 1 a 3.
 
 ### Bancos soportados
 
@@ -181,7 +198,9 @@ cuenta ni nombres) y se agrega su lector. Ver [docs/ARQUITECTURA.md](docs/ARQUIT
 
 ## Configuración opcional
 
-Todo se configura en `.env`. Nada de esto es obligatorio:
+Todo se configura en el archivo `.env`. En la app de escritorio está en
+`%LOCALAPPDATA%\MoneyTalk\.env` (se crea solo, con cada opción explicada); con Docker, en la
+raíz del proyecto. Nada de esto es obligatorio:
 
 | Qué | Variables | Para qué |
 |---|---|---|
@@ -191,19 +210,34 @@ Todo se configura en `.env`. Nada de esto es obligatorio:
 | Datos oficiales de la SEC | `SEC_USER_AGENT` | Poné tu nombre y correo real: la SEC lo exige para consultar estados financieros |
 | PDFs con contraseña | `STATEMENT_PDF_PASSWORDS` | Para la carpeta de entrada y los adjuntos de Gmail |
 
-Después de cambiar `.env`, reiniciá con `docker compose up -d`.
+Después de cambiar `.env`: en la app de escritorio, cerrala y volvé a abrirla; con Docker,
+`docker compose up -d`.
 
 ## Preguntas frecuentes
 
 **¿Los datos de la bolsa son reales?** Sí: vienen de Yahoo Finance, con unos 15 minutos de
 retraso para EE. UU., y se actualizan cada 15 minutos.
 
-**¿Cómo actualizo la app?** `git pull` y luego `docker compose up -d --build`.
+**¿Cómo actualizo la app?** En la app de escritorio, cerrala y abrí el instalador de la
+[última versión](https://github.com/ifhy-alex/MoneyTalk/releases/latest) encima de la que
+tenés; tus datos se conservan. Con Docker, `git pull` y luego `docker compose up -d --build`.
 
-**¿Puedo usarla sin Docker?** Sí, para desarrollo: mirá
+**¿Puedo compartirla con mi familia?** Sí: pasales `MoneyTalk-Setup.exe` (o el enlace de
+descarga). Cada persona tiene sus propios datos, guardados solo en su computadora. Lo más
+simple para empezar es importar los PDF del banco; Gmail requiere los pasos de Google Cloud de
+arriba.
+
+**¿Windows dice que la app no es segura?** Pasa con apps nuevas que no están firmadas
+digitalmente. Tocá «Más información» → «Ejecutar de todas formas». Algún antivirus podría
+marcarla por el mismo motivo; se puede agregar como excepción.
+
+**¿Puedo usarla sin Docker ni el instalador?** Sí, para desarrollo: mirá
 [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 
 ## Tecnología
 
-Python 3.12 · FastAPI · SQLAlchemy · PostgreSQL · React · TypeScript · Recharts · Docker.
-Detalles técnicos y decisiones de diseño en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
+Python 3.12 · FastAPI · SQLAlchemy · PostgreSQL · React · TypeScript · Recharts.
+La app de escritorio suma un PostgreSQL embebido (binarios de `pgserver`), una ventana nativa
+con pywebview (WebView2) y se empaqueta con PyInstaller e Inno Setup. Docker se usa solo para
+desarrollo. Detalles técnicos y decisiones de diseño en
+[docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
